@@ -549,6 +549,7 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertEqual("\(address)", "178.152.71.53")
     }
     
+    /// Test that the equality/inequality operators work as expected.
     func testEqualityOperators() {
         var address1 = IPv4Address()
         var address2 = IPv4Address(parts: 0,0,0,0)
@@ -602,6 +603,7 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertEqual(address1, address2)
     }
     
+    /// Test that string representations of IP addresses are parsed correctly.
     func testStringConstructor() {
         var address1 = IPv4Address("61.105.180.185")
         var address2 = IPv4Address(parts: 61,105,180,185)
@@ -641,4 +643,21 @@ class IPv4AddressTests: XCTestCase {
         address1 = IPv4Address("255.255.255.256")
         XCTAssertNil(address1)
     }
+
+    static var allTests = [
+        ("testIsUnspecified",     testIsUnspecified),
+        ("testIsLoopback",        testIsLoopback),
+        ("testIsPrivate",         testIsPrivate),
+        ("testIsLinkLocal",       testIsLinkLocal),
+        ("testIsGlobal",          testIsGlobal),
+        ("testIsMulticast",       testIsMulticast),
+        ("testIsBroadcast",       testIsBroadcast),
+        ("testIsDocumentation",   testIsDocumentation),
+        ("testStaticValues",      testStaticValues),
+        ("testValue",             testValue),
+        ("testOctets",            testOctets),
+        ("testStringConversion",  testStringConversion),
+        ("testEqualityOperators", testEqualityOperators),
+        ("testStringConstructor", testStringConstructor)
+    ]
 }
