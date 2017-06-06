@@ -16,14 +16,25 @@
 
 import XCTest
 import IPAddress
+#if os(Linux)
+    import Glibc
+#endif
 
 class PerformanceTests: XCTestCase {
     class Utils {
+        static func randomByte() -> UInt8 {
+            #if os(Linux)
+                return UInt8(rand() & 0xFF)
+            #else
+                return UInt8(arc4random_uniform(256))
+            #endif
+        }
+        
         static func randomIPAddressString() -> String {
-            let a = arc4random_uniform(256)
-            let b = arc4random_uniform(256)
-            let c = arc4random_uniform(256)
-            let d = arc4random_uniform(256)
+            let a = randomByte()
+            let b = randomByte()
+            let c = randomByte()
+            let d = randomByte()
             return "\(a).\(b).\(c).\(d)"
         }
         
