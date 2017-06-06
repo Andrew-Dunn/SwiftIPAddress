@@ -47,7 +47,7 @@ class PerformanceTests: XCTestCase {
             return addressStrings
         }
         
-        static func cDecodeIPAddress(ipString: String) -> IPv4Address? {
+        static func cDecodeIPAddress(ipString: String) -> in_addr? {
             var addr: in_addr = in_addr()
             let result = ipString.withCString { (cString: UnsafePointer<Int8>) -> Int32 in
                 return inet_aton(cString, &addr)
@@ -55,7 +55,17 @@ class PerformanceTests: XCTestCase {
             if result == 0 {
                 return nil
             }
-            return IPv4Address(fromUInt32: addr.s_addr)
+            return addr
+        }
+        
+        static func swiftDecodeIPAddress(ipString: String) -> in_addr? {
+            let result = IPv4Address(ipString)
+            if (result == nil) {
+                return nil
+            }
+            return in_addr(
+                s_addr: in_addr_t(
+                    integerLiteral: UInt32(fromIPv4Address: result!)))
         }
     }
     
@@ -70,17 +80,17 @@ class PerformanceTests: XCTestCase {
         print("Profiling IPv4Address String Constructor.")
         // Warm up the cache.
         for ipString in PerformanceTests.ipAddressStrings {
-            XCTAssertNotNil(IPv4Address(ipString))
+            XCTAssertNotNil(Utils.swiftDecodeIPAddress(ipString: ipString))
         }
         for ipString in PerformanceTests.ipAddressStrings {
-            XCTAssertNotNil(IPv4Address(ipString))
+            XCTAssertNotNil(Utils.swiftDecodeIPAddress(ipString: ipString))
         }
         for ipString in PerformanceTests.ipAddressStrings {
-            XCTAssertNotNil(IPv4Address(ipString))
+            XCTAssertNotNil(Utils.swiftDecodeIPAddress(ipString: ipString))
         }
         measure {
             for ipString in PerformanceTests.ipAddressStrings {
-                XCTAssertNotNil(IPv4Address(ipString))
+                XCTAssertNotNil(Utils.swiftDecodeIPAddress(ipString: ipString))
             }
         }
     }
