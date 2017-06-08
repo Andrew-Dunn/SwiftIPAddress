@@ -642,6 +642,16 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertNil(address1)
         address1 = IPv4Address("255.255.255.256")
         XCTAssertNil(address1)
+        address1 = IPv4Address("255.255.255.255.")
+        XCTAssertNil(address1)
+        address1 = IPv4Address("192.168.0.")
+        XCTAssertNil(address1)
+        address1 = IPv4Address("127.0..1")
+        XCTAssertNil(address1)
+        address1 = IPv4Address("127..0.1")
+        XCTAssertNil(address1)
+        address1 = IPv4Address(".0.0.1")
+        XCTAssertNil(address1)
     }
 
     static var allTests = [

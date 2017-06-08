@@ -89,6 +89,10 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
                 }
                 currentValue += c.value - zero.value
             } else if c == dot {
+                if (currentLength == 0) {
+                    // Part had no digits.
+                    return nil
+                }
                 currentLength = 0
                 if (currentValue > 255) {
                     // Part was too long.
