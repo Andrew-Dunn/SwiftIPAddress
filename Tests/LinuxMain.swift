@@ -3,5 +3,4 @@ import XCTest
 
 XCTMain([
     testCase(IPv4AddressTests.allTests),
-    testCase(PerformanceTests.allTests),
 ])
