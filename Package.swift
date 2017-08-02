@@ -17,5 +17,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "IPAddress"
+    name: "IPAddress",
+    targets: [
+        Target(
+            name: "IPAddressBenchmarks",
+            dependencies: [
+                "IPAddress"
+            ]),
+        Target(
+            name: "IPAddress"
+        ),
+    ],
+    dependencies: []
 )
