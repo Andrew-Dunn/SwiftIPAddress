@@ -653,6 +653,48 @@ class IPv4AddressTests: XCTestCase {
         address1 = IPv4Address(".0.0.1")
         XCTAssertNil(address1)
     }
+    
+    /// Test that the swift version creates the same IP address as the C version.
+    func testEqualToPton() {
+        func cDecodeIPAddress(ipString: String) -> in_addr? {
+            var addr: in_addr = in_addr()
+            let result = ipString.withCString { (cString: UnsafePointer<Int8>) -> Int32 in
+                return inet_pton(AF_INET, cString, &addr)
+            }
+            if result == 0 {
+                return nil
+            }
+            return addr
+        }
+        
+        func swiftDecodeIPAddress(ipString: String) -> in_addr? {
+            let result = IPv4Address(ipString)
+            if (result == nil) {
+                return nil
+            }
+            return in_addr(
+                s_addr: in_addr_t(
+                    integerLiteral: UInt32(fromIPv4Address: result!)))
+        }
+        
+        var ipAddressString = "61.105.180.185"
+        XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertEqual(cDecodeIPAddress(ipString: ipAddressString)!.s_addr,
+                       swiftDecodeIPAddress(ipString: ipAddressString)!.s_addr)
+        
+        ipAddressString = "0.0.0.0"
+        XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertEqual(cDecodeIPAddress(ipString: ipAddressString)!.s_addr,
+                       swiftDecodeIPAddress(ipString: ipAddressString)!.s_addr)
+        
+        ipAddressString = "255.255.255.255"
+        XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertEqual(cDecodeIPAddress(ipString: ipAddressString)!.s_addr,
+                       swiftDecodeIPAddress(ipString: ipAddressString)!.s_addr)
+    }
 
     static var allTests = [
         ("testIsUnspecified",     testIsUnspecified),
@@ -668,6 +710,7 @@ class IPv4AddressTests: XCTestCase {
         ("testOctets",            testOctets),
         ("testStringConversion",  testStringConversion),
         ("testEqualityOperators", testEqualityOperators),
-        ("testStringConstructor", testStringConstructor)
+        ("testStringConstructor", testStringConstructor),
+        ("testEqualToPton",       testEqualToPton)
     ]
 }
