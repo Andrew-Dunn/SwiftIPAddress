@@ -18,6 +18,7 @@ import Darwin
 import Foundation
 
 let ipCount = 1_000_000
+let doubleCount = Double(ipCount)
 let ipAddressStrings = Utils.randomIPAddressStrings(count: ipCount)
 let ipAddresses = Utils.randomIPv4s(count: ipCount)
 var timeBaseInfo = mach_timebase_info_data_t()
@@ -25,17 +26,15 @@ mach_timebase_info(&timeBaseInfo)
 
 print("=====================================")
 print("SwiftIPAddress Performance Benchmarks")
-print("=====================================")
-print("+---------------------------------+")
-print("| IPv4 Dotted Quad Parsing        |")
-print("+-------------------+-------------+")
+print("=====================================\n")
+print("IPv4 Dotted Quad Parsing")
+print("Method,IPv4 addresses per second")
 
 var t1 = mach_absolute_time()
 for ipString in ipAddressStrings {
     let result = Utils.swiftDecodeIPAddress(ipString: ipString)
     if result == nil {
-        print("| SwiftIPAddress    |       ERROR |")
-        print("+-------------------+-------------+")
+        print("SwiftIPAddress,ERROR")
         exit(1)
     }
 }
@@ -45,15 +44,13 @@ var elapsed = t2 - t1
 var elapsedNano = Double(elapsed) * Double(timeBaseInfo.numer) / Double(timeBaseInfo.denom);
 let nanosInASecond = 1_000_000_000.0
 var elapsedSeconds = elapsedNano / nanosInASecond
-print(String(format: "| SwiftIPAddress    | %9f s |", elapsedNano / nanosInASecond))
-print("+-------------------+-------------+")
+print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
 
 t1 = mach_absolute_time()
 for ipString in ipAddressStrings {
     let result = Utils.atonDecodeIPAddress(ipString: ipString)
     if result == nil {
-        print("| inet_aton (Swift) |       ERROR |")
-        print("+-------------------+-------------+")
+        print("inet_aton (Swift),ERROR")
         exit(1)
     }
 }
@@ -62,15 +59,13 @@ t2 = mach_absolute_time()
 elapsed = t2 - t1
 elapsedNano = Double(elapsed) * Double(timeBaseInfo.numer) / Double(timeBaseInfo.denom);
 elapsedSeconds = elapsedNano / nanosInASecond
-print(String(format: "| inet_aton (Swift) | %9f s |", elapsedNano / nanosInASecond))
-print("+-------------------+-------------+")
+print("inet_aton (Swift),\( doubleCount / elapsedSeconds)")
 
 t1 = mach_absolute_time()
 for ipString in ipAddressStrings {
     let result = Utils.ptonDecodeIPAddress(ipString: ipString)
     if result == nil {
-        print("| inet_pton (Swift) |       ERROR |")
-        print("+-------------------+-------------+")
+        print("inet_pton (Swift),ERROR")
         exit(1)
     }
 }
@@ -78,21 +73,17 @@ t2 = mach_absolute_time()
 elapsed = t2 - t1
 elapsedNano = Double(elapsed) * Double(timeBaseInfo.numer) / Double(timeBaseInfo.denom);
 elapsedSeconds = elapsedNano / nanosInASecond
-print(String(format: "| inet_pton (Swift) | %9f s |", elapsedNano / nanosInASecond))
-
-print("+-------------------+-------------+\n")
+print("inet_pton (Swift),\( doubleCount / elapsedSeconds)")
 
 
-print("+---------------------------------+")
-print("| IPv4 Dotted Quad Presentation   |")
-print("+-------------------+-------------+")
+print("\nIPv4 Dotted Quad Presentation")
+print("Method,IPv4 addresses per second")
 
 t1 = mach_absolute_time()
 for ip in ipAddresses {
     let result = ip.description
     if result.isEmpty {
-        print("| SwiftIPAddress    |       ERROR |")
-        print("+-------------------+-------------+")
+        print("SwiftIPAddress,ERROR")
         exit(1)
     }
 }
@@ -100,15 +91,13 @@ t2 = mach_absolute_time()
 elapsed = t2 - t1
 elapsedNano = Double(elapsed) * Double(timeBaseInfo.numer) / Double(timeBaseInfo.denom);
 elapsedSeconds = elapsedNano / nanosInASecond
-print(String(format: "| SwiftIPAddress    | %9f s |", elapsedNano / nanosInASecond))
-print("+-------------------+-------------+")
+print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
 
 t1 = mach_absolute_time()
 for ip in ipAddresses {
     let result = Utils.ntoaEncodeIPAddress(ip: ip)
     if result.isEmpty {
-        print("| inet_ntoa (Swift) |       ERROR |")
-        print("+-------------------+-------------+")
+        print("inet_ntoa (Swift),ERROR")
         exit(1)
     }
 }
@@ -116,15 +105,12 @@ t2 = mach_absolute_time()
 elapsed = t2 - t1
 elapsedNano = Double(elapsed) * Double(timeBaseInfo.numer) / Double(timeBaseInfo.denom);
 elapsedSeconds = elapsedNano / nanosInASecond
-print(String(format: "| inet_ntoa (Swift) | %9f s |", elapsedNano / nanosInASecond))
-print("+-------------------+-------------+")
-
+print("inet_ntoa (Swift),\( doubleCount / elapsedSeconds)")
 t1 = mach_absolute_time()
 for ip in ipAddresses {
     let result = Utils.ntopEncodeIPAddress(ip: ip)
     if result.isEmpty {
-        print("| inet_ntop (Swift) |       ERROR |")
-        print("+-------------------+-------------+")
+        print("inet_ntop (Swift),ERROR")
         exit(1)
     }
 }
@@ -132,5 +118,4 @@ t2 = mach_absolute_time()
 elapsed = t2 - t1
 elapsedNano = Double(elapsed) * Double(timeBaseInfo.numer) / Double(timeBaseInfo.denom);
 elapsedSeconds = elapsedNano / nanosInASecond
-print(String(format: "| inet_ntop (Swift) | %9f s |", elapsedNano / nanosInASecond))
-print("+-------------------+-------------+")
+print("inet_ntop (Swift),\( doubleCount / elapsedSeconds)")
