@@ -35,6 +35,7 @@ class HighResolutionTimer {
     
     init() {
         #if os(Linux)
+            epoch = timespec()
             clock_gettime(CLOCK_MONOTONIC, &epoch)
         #else
             epoch = mach_absolute_time()
