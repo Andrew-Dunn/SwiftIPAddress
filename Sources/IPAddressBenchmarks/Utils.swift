@@ -40,7 +40,7 @@ class Utils {
     
     static func randomIPv4() -> IPv4Address {
         #if os(Linux)
-            return IPv4Address(fromUInt32: rand())
+            return IPv4Address(fromUInt32: UInt32(rand()))
         #else
             return IPv4Address(fromUInt32: arc4random_uniform(UInt32.max))
         #endif
