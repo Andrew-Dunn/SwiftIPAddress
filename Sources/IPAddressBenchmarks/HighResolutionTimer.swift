@@ -24,7 +24,7 @@ fileprivate let NANOSECONDS_IN_A_SECOND = 1_000_000_000.0
 
 class HighResolutionTimer {
     #if os(Linux)
-        typealias EpochType = Int
+        typealias EpochType = timespec
     #else
         typealias EpochType = UInt64
         var timeBaseInfo = mach_timebase_info_data_t()
@@ -35,9 +35,7 @@ class HighResolutionTimer {
     
     init() {
         #if os(Linux)
-            var ts = timespec()
-            clock_gettime(CLOCK_MONOTONIC, &ts)
-            epoch = ts.tv_nsec
+            clock_gettime(CLOCK_MONOTONIC, &epoch)
         #else
             epoch = mach_absolute_time()
             mach_timebase_info(&timeBaseInfo)
@@ -47,9 +45,7 @@ class HighResolutionTimer {
     
     func mark() {
         #if os(Linux)
-            var ts = timespec()
-            clock_gettime(CLOCK_MONOTONIC, &ts)
-            epoch = ts.tv_nsec
+            clock_gettime(CLOCK_MONOTONIC, &epoch)
         #else
             epoch = mach_absolute_time()
         #endif
@@ -57,14 +53,14 @@ class HighResolutionTimer {
     
     func check() -> Double {
         #if os(Linux)
-            var ts = timespec()
-            clock_gettime(CLOCK_MONOTONIC, &ts)
-            let now = ts.tv_nsec
-            let delta = Double(now - epoch)
+            var now = timespec()
+            clock_gettime(CLOCK_MONOTONIC, &now)
+            let delta = Double(now.tv_sec - epoch.tv_sec)
+                        + (Double(now.tv_nsec - epoch.tv_nsec) / NANOSECONDS_IN_A_SECOND)
         #else
             let now = mach_absolute_time()
-            let delta = Double(now - epoch) * ticksPerNs
+            let delta = (Double(now - epoch) * ticksPerNs) / NANOSECONDS_IN_A_SECOND
         #endif
-        return delta / NANOSECONDS_IN_A_SECOND;
+        return delta;
     }
 }
