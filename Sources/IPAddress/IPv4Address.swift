@@ -196,7 +196,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     /// - Note: Equivalent to checking if the IP address is equal to
     ///         **0.0.0.0**.
     public var isUnspecified: Bool {
-        return UInt32(fromIPv4Address: self) == 0
+        return value == 0
     }
     
     /// Returns `true` if the IP address is a loopback address.
@@ -204,7 +204,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     /// - Note: Equivalent to checking if the IP address is in the subnet
     ///         **127.0.0.0/8**.
     public var isLoopback: Bool {
-        return (UInt32(fromIPv4Address: self) & 0x000000FF) == 0x0000007F
+        return (value & 0x000000FF) == 0x0000007F
     }
     
     /// Returns `true` if the IP address is in one of the ranges reserved for
@@ -215,10 +215,9 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     ///     - **172.16.0.0/12** (1,048,576 IP addresses)
     ///     - **10.0.0.0/8** (16,777,216 IP addresses)
     public var isPrivate: Bool {
-        let uint = UInt32(fromIPv4Address: self)
-        return (uint & 0x000000FF) == 0x0000000A ||
-            (uint & 0x0000F0FF) == 0x000010AC ||
-            (uint & 0x0000FFFF) == 0x0000A8C0
+        return (value & 0x000000FF) == 0x0000000A ||
+            (value & 0x0000F0FF) == 0x000010AC ||
+            (value & 0x0000FFFF) == 0x0000A8C0
     }
     
     /// Returns `true` if the IP address is a link-local address.
@@ -226,7 +225,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     /// - Note: The address block reserved for link-local addresses is
     ///         **169.254.0.0/16**.
     public var isLinkLocal: Bool {
-        return (UInt32(fromIPv4Address: self) & 0x0000FFFF) == 0x0000FEA9
+        return (value & 0x0000FFFF) == 0x0000FEA9
     }
     
     /// Returns `true` if the IP address is globally-routable.
@@ -258,16 +257,15 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     
     /// Returns true if the IP address is a broadcast address.
     public var isBroadcast: Bool {
-        return UInt32(fromIPv4Address: self) == 0xFFFFFFFF
+        return value == 0xFFFFFFFF
     }
     
     /// Returns true if the IP address is in a block reserved for the purposes
     /// of having example IP addresses in written documentation.
     public var isDocumentation: Bool {
-        let uint = UInt32(fromIPv4Address: self)
-        return (uint & 0x00FFFFFF) == 0x000200C0 ||
-            (uint & 0x00FFFFFF) == 0x006433C6 ||
-            (uint & 0x00FFFFFF) == 0x007100CB
+        return (value & 0x00FFFFFF) == 0x000200C0 ||
+            (value & 0x00FFFFFF) == 0x006433C6 ||
+            (value & 0x00FFFFFF) == 0x007100CB
     }
     
     /// Returns a string representation of the IP address.
