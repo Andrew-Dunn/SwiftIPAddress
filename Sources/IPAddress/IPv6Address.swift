@@ -48,10 +48,10 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     ///   - d: The *fourth & final* component of the IP address.
     public init (parts a: UInt16, _ b: UInt16, _ c: UInt16, _ d: UInt16,
                      _ e: UInt16, _ f: UInt16, _ g: UInt16, _ h: UInt16) {
-        low = UInt64(a.bigEndian) | (UInt64(b.bigEndian) << 16)
-              | (UInt64(c.bigEndian) << 32) | (UInt64(d.bigEndian) << 48)
-        high = UInt64(e.bigEndian) | (UInt64(f.bigEndian) << 16)
-               | (UInt64(g.bigEndian) << 32) | (UInt64(h.bigEndian) << 48)
+        high = UInt64(a.bigEndian) | (UInt64(b.bigEndian) << 16)
+               | (UInt64(c.bigEndian) << 32) | (UInt64(d.bigEndian) << 48)
+        low = UInt64(e.bigEndian) | (UInt64(f.bigEndian) << 16)
+              | (UInt64(g.bigEndian) << 32) | (UInt64(h.bigEndian) << 48)
     }
 }
 
