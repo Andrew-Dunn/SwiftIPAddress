@@ -231,21 +231,24 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     
     /// Returns `true` if the IP address is globally-routable.
     public var isGlobal: Bool {
-        let uint = UInt32(fromIPv4Address: self)
-        // Private Addresses
-        return !((uint & 0x000000FF) == 0x0000000A ||
-            (uint & 0x0000F0FF) == 0x000010AC ||
-            (uint & 0x0000FFFF) == 0x0000A8C0 ||
+        return !(
+            // Unspecified Address
+            value == 0x00000000 ||
+            // Private Addresses
+            (value & 0x000000FF) == 0x0000000A ||
+            (value & 0x0000F0FF) == 0x000010AC ||
+            (value & 0x0000FFFF) == 0x0000A8C0 ||
             // Loopback Address
-            (uint & 0x000000FF) == 0x0000007F ||
+            (value & 0x000000FF) == 0x0000007F ||
             // Link-Local Address
-            (uint & 0x0000FFFF) == 0x0000FEA9 ||
+            (value & 0x0000FFFF) == 0x0000FEA9 ||
             // Broadcast Address
-            uint == 0xFFFFFFFF ||
+            value == 0xFFFFFFFF ||
             // Documentation Addresses
-            (uint & 0x00FFFFFF) == 0x000200C0 ||
-            (uint & 0x00FFFFFF) == 0x006433C6 ||
-            (uint & 0x00FFFFFF) == 0x007100CB)
+            (value & 0x00FFFFFF) == 0x000200C0 ||
+            (value & 0x00FFFFFF) == 0x006433C6 ||
+            (value & 0x00FFFFFF) == 0x007100CB
+        )
     }
     
     /// Returns true if IP address is a multicast address.

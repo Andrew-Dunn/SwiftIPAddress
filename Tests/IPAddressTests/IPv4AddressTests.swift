@@ -178,11 +178,15 @@ class IPv4AddressTests: XCTestCase {
     
     /// Test for globally routable address detection.
     func testIsGlobal() {
+        // Test that the unspecified address is not globally routable.
+        //
+        // 0.0.0.0/8
+        var address = IPv4Address(parts: 0,0,0,0)
+        XCTAssertFalse(address.isGlobal)
+        
         // Test that private addresses are not globally routable.
         //
         // 10.0.0.0/8
-        var address = IPv4Address(parts: 0,0,0,0)
-        XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 9,0,0,0)
         XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 11,0,0,0)
@@ -264,8 +268,6 @@ class IPv4AddressTests: XCTestCase {
         //
         address = IPv4Address(parts: 127,0,0,0)
         XCTAssertFalse(address.isGlobal)
-        address = IPv4Address(parts: 0,0,0,0)
-        XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 126,0,0,0)
         XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 128,0,0,0)
@@ -304,8 +306,6 @@ class IPv4AddressTests: XCTestCase {
         
         // Test that the broadcast address is not globally routable.
         //
-        address = IPv4Address(parts: 0,0,0,0)
-        XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 0,0,0,255)
         XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 0,0,255,0)
