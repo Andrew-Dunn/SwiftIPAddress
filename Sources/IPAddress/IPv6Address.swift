@@ -21,18 +21,13 @@
 /// - Author: Andrew Dunn.
 ///
 public struct IPv6Address: LosslessStringConvertible, Equatable {
-    public init?(_ description: String) {
-        high = 0
-        low = 0
-    }
+    fileprivate let high, low: UInt64
     
     public static func ==(lhs: IPv6Address, rhs: IPv6Address) -> Bool {
         return  lhs.high == rhs.high && lhs.low == rhs.low
     }
     
     public var description: String = "::0"
-    
-    fileprivate let low, high: UInt64
     
     public init() {
         low = 0;
@@ -52,6 +47,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                | (UInt64(c.bigEndian) << 32) | (UInt64(d.bigEndian) << 48)
         low = UInt64(e.bigEndian) | (UInt64(f.bigEndian) << 16)
               | (UInt64(g.bigEndian) << 32) | (UInt64(h.bigEndian) << 48)
+    }
+    
+    public init?(_ description: String) {
+        high = 0
+        low = 0
     }
 }
 
