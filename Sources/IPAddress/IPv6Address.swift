@@ -95,7 +95,9 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         var currentOutputSeg = 0
         var longestZeroRunLength = 0
         
+        // First 64 bits are 0.
         if high == 0 {
+            // These cases need special handlers to prevent them from being presented as IPv4 compatible.
             if low == 0 {
                 return "::"
             }
@@ -114,6 +116,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 return "::ffff:\(ipv4.description)"
             }
             
+            // Skip the first 4 segments.
             isZeroRun = true
             zeroRunLength = 4
             longestZeroRun = 0
@@ -122,8 +125,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         }
         
         while segment < 8 {
+            // Calculate which 16-bit word we should be handling. (x & 0b11) << 4, is equivalent to
+            // (x % 4) * 16.
             let shift: UInt64 = (segment & 0b11) << 4
             let word: UInt64
+            // Same as dividing by 4.
             if segment >> 2 == 0 {
                 word = (high >> shift) & 0xFFFF
             } else {
@@ -133,8 +139,10 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             let isZero = (word == 0)
             
             if segment == 0 && isZero {
+                // isZeroRun will be misconfigured if the first segment is a zero, so let's fix that.
                 isZeroRun = true
             } else if segment != 0 && isZero != isZeroRun {
+                // Add logic for when a run of zeroes ends/begins.
                 currentOutputSeg += 1
                 outputSegs.append("")
                 zeroRunLength = 0
@@ -155,12 +163,15 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
             
             segment += 1
+            // The ':' character should only be used in-between segments, not at the end of the entire
+            // address.
             if (segment != 8) {
                 outputSegs[currentOutputSeg] += ":"
             }
         }
         
         var out = ""
+        // Special handling for when the first output segment is the longest zero run.
         if (longestZeroRun == 0) && (longestZeroRunLength > 1) {
             out = ":"
         }
