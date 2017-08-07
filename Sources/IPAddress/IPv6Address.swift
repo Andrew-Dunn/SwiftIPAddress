@@ -53,5 +53,36 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         high = 0
         low = 0
     }
+    
+    /// Returns `true` if the IP address is an unspecified, if you listen on
+    /// this address, your socket will listen on all addresses available.
+    ///
+    /// - Note: Equivalent to checking if the IP address is equal to
+    ///         **::**.
+    public var isUnspecified: Bool {
+        return high == 0 && low == 0
+    }
+
+    /// Returns `true` if the IP address is a loopback address.
+    ///
+    /// - Note: Equivalent to checking if the IP address is **::1**.
+    public var isLoopback: Bool {
+        return high == 0 && low == 0x0100_0000_0000_0000
+    }
+    
+    /// Returns `true` if the IP address is a unique local address **(fc00::/7)**.
+    public var isUniqueLocal: Bool {
+        return (high & 0xFE) == 0xFC
+    }
+    
+    /// Returns `true` if the IP address is a unicast link-local address **(fe80::/10)**.
+    public var isUnicastLinkLocal: Bool {
+        return (high & 0xC0FF) == 0x80FE
+    }
+    
+    /// Returns `true` if the IP address is a (deprecated) unicast site-local address **(fec0::/10)**.
+    public var isUnicastSiteLocal: Bool {
+        return (high & 0xC0FF) == 0xC0FE
+    }
 }
 
