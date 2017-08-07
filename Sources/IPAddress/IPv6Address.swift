@@ -27,8 +27,6 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         return  lhs.high == rhs.high && lhs.low == rhs.low
     }
     
-    public var description: String = "::0"
-    
     public init() {
         low = 0;
         high = 0;
@@ -84,5 +82,53 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     public var isUnicastSiteLocal: Bool {
         return (high & 0xC0FF) == 0xC0FE
     }
+    
+    /// Returns a string representation of the IP address. Will display IPv4 compatible/mapped addresses
+    /// correctly, and will truncate zeroes when possible.
+    public var description: String {
+        var out = ""
+        if high == 0 {
+            if low == 0 {
+                return "::"
+            }
+            if low == 0x0100_0000_0000_0000 {
+                return "::1"
+            }
+            
+            // Check if this is an IPv4-compatible/mapped IPv6 address.
+            let ipv4Check = low & 0x0000_0000_FFFF_FFFF
+            if (ipv4Check == 0 || ipv4Check == 0xFFFF_0000) {
+                // Use dotted quads to represent the IPv4 part.
+                let ipv4 = IPv4Address(fromUInt32: UInt32(low >> 32))
+                if (ipv4Check == 0) {
+                    return "::\(ipv4.description)"
+                }
+                return "::ffff:\(ipv4.description)"
+            }
+        }
+        
+        var segment: UInt64 = 0
+        
+        while segment < 8 {
+            let shift: UInt64 = (segment & 0b11) << 4
+            let word: UInt64
+            if segment >> 2 == 0 {
+                word = (high >> shift) & 0xFFFF
+            } else {
+                word = (low >> shift) & 0xFFFF
+            }
+            
+            let lo = (word >> 8) & 0xFF
+            let hi = word & 0xFF
+            
+            out += String(lo | (hi << 8), radix: 16, uppercase: false)
+            
+            segment += 1
+            if (segment != 8) {
+                out += ":"
+            }
+        }
+        
+        return out
+    }
 }
-
