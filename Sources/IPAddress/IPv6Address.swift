@@ -86,7 +86,15 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     /// Returns a string representation of the IP address. Will display IPv4 compatible/mapped addresses
     /// correctly, and will truncate zeroes when possible.
     public var description: String {
-        var out = ""
+        var segment: UInt64 = 0
+        var outputSegs: [String] = [""]
+        
+        var isZeroRun = false
+        var zeroRunLength = 0
+        var longestZeroRun = -1
+        var currentOutputSeg = 0
+        var longestZeroRunLength = 0
+        
         if high == 0 {
             if low == 0 {
                 return "::"
@@ -105,9 +113,13 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 }
                 return "::ffff:\(ipv4.description)"
             }
+            
+            isZeroRun = true
+            zeroRunLength = 4
+            longestZeroRun = 0
+            longestZeroRunLength = 4
+            segment = 4
         }
-        
-        var segment: UInt64 = 0
         
         while segment < 8 {
             let shift: UInt64 = (segment & 0b11) << 4
@@ -118,17 +130,47 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 word = (low >> shift) & 0xFFFF
             }
             
-            let lo = (word >> 8) & 0xFF
-            let hi = word & 0xFF
+            let isZero = (word == 0)
             
-            out += String(lo | (hi << 8), radix: 16, uppercase: false)
+            if segment == 0 && isZero {
+                isZeroRun = true
+            } else if segment != 0 && isZero != isZeroRun {
+                currentOutputSeg += 1
+                outputSegs.append("")
+                zeroRunLength = 0
+                isZeroRun = isZero
+            }
+            
+            if (isZero) {
+                zeroRunLength += 1
+                if zeroRunLength > longestZeroRunLength {
+                    longestZeroRunLength = zeroRunLength
+                    longestZeroRun = currentOutputSeg
+                }
+                outputSegs[currentOutputSeg] += "0"
+            } else {
+                let lo = (word >> 8) & 0xFF
+                let hi = word & 0xFF
+                outputSegs[currentOutputSeg] += String(lo | (hi << 8), radix: 16, uppercase: false)
+            }
             
             segment += 1
             if (segment != 8) {
-                out += ":"
+                outputSegs[currentOutputSeg] += ":"
             }
         }
         
+        var out = ""
+        if (longestZeroRun == 0) && (longestZeroRunLength > 1) {
+            out = ":"
+        }
+        for i in 0..<outputSegs.count {
+            if (longestZeroRun == i) && (longestZeroRunLength > 1) {
+                out += ":"
+            } else {
+                out += outputSegs[i]
+            }
+        }
         return out
     }
 }

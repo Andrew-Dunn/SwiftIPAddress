@@ -124,6 +124,18 @@ class IPv6AddressTests: XCTestCase {
         XCTAssertEqual(address.description, "123::8091:0:0:0")
         address = IPv6Address(parts: 0, 0, 0xaa57, 0xcdef, 0, 0, 0, 0x3b7a)
         XCTAssertEqual(address.description, "0:0:aa57:cdef::3b7a")
+        address = IPv6Address(parts: 0x0123, 0x4567, 0x89ab, 0xcdef, 0x8091, 0xa2b3, 0, 0)
+        XCTAssertEqual(address.description, "123:4567:89ab:cdef:8091:a2b3::")
+        address = IPv6Address(parts: 0, 0, 0, 0, 0, 0xa2b3, 0xc4d5, 0xe6f7)
+        XCTAssertEqual(address.description, "::a2b3:c4d5:e6f7")
+        
+        // Don't truncate a single zero.
+        address = IPv6Address(parts: 0, 2, 3, 4, 5, 6, 7, 8)
+        XCTAssertEqual(address.description, "0:2:3:4:5:6:7:8")
+        address = IPv6Address(parts: 1, 2, 3, 4, 0, 6, 7, 8)
+        XCTAssertEqual(address.description, "1:2:3:4:0:6:7:8")
+        address = IPv6Address(parts: 1, 2, 3, 4, 5, 6, 7, 0)
+        XCTAssertEqual(address.description, "1:2:3:4:5:6:7:0")
     }
     
     /// Test that the equality/inequality operators work as expected.
