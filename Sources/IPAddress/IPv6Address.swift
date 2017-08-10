@@ -153,6 +153,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 }
                 currentValue = 0
                 currentLength = 0
+            } else {
+                break
             }
         }
         if (parsingQuad) {
@@ -172,7 +174,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             
             if (zeroRunIndex == -1) {
                 segment += 2
-                lo |= UInt64(ipv4 & 0xFFFF_FFFF)
+                lo |= UInt64(ipv4 & 0xFFFF_FFFF) << 32
             } else {
                 segments.append(UInt16(ipv4 & 0xFFFF))
                 segments.append(UInt16((ipv4 & 0xFFFF_0000) >> 16))
@@ -180,6 +182,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             currentValue = 0
             currentLength = 0
         }
+
         if (!parsingQuad && zeroRunIndex == -1) {
             let shift: UInt64 = (segment & 0b11) << 4
             // Same as dividing by 4.
@@ -192,6 +195,9 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         } else if currentLength > 0 || segments.count > 0 {
             if currentLength > 0 {
                 segments.append(UInt16(currentValue).bigEndian)
+            }
+            if Int(segment) + segments.count > 8 {
+                return nil
             }
             while (segment < 8 - segments.count) {
                 segment += 1
@@ -210,7 +216,10 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             segment = 8
         }
         
-        if segment < 8 {
+        
+        if segment > 8 {
+            return nil
+        } else if segment < 8 {
             return nil
         }
         
