@@ -206,6 +206,12 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 }
                 segment += 1
             }
+        } else if segment == zeroRunIndex {
+            segment = 8
+        }
+        
+        if segment < 8 {
+            return nil
         }
         
         high = hi
