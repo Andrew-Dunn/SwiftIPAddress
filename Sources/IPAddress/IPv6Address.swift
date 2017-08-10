@@ -199,7 +199,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             if Int(segment) + segments.count > 8 {
                 return nil
             }
-            while (segment < 8 - segments.count) {
+            while (Int(segment) < 8 - segments.count) {
                 segment += 1
             }
             for val in segments {
@@ -212,7 +212,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 }
                 segment += 1
             }
-        } else if segment == zeroRunIndex {
+        } else if Int(segment) == zeroRunIndex {
             segment = 8
         }
         
