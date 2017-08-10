@@ -144,6 +144,38 @@ class IPv6AddressTests: XCTestCase {
     
     /// Test that string representations of IP addresses are parsed correctly.
     func testStringConstructor() {
+        var parsed = IPv6Address("1:2:3:4:5:6:7:8")
+        var actual = IPv6Address(parts: 1, 2, 3, 4, 5, 6, 7, 8)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("123:4567:89ab:cdef:8091:a2b3:c4d5:e6f7")
+        actual = IPv6Address(parts: 0x0123, 0x4567, 0x89ab, 0xcdef, 0x8091, 0xa2b3, 0xc4d5, 0xe6f7)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("::")
+        actual = IPv6Address()
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("::1")
+        actual = IPv6Address(parts: 0, 0, 0, 0, 0, 0, 0, 1)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("123:4567:89ab:cdef:8091:a2b3::")
+        actual = IPv6Address(parts: 0x0123, 0x4567, 0x89ab, 0xcdef, 0x8091, 0xa2b3, 0, 0)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("123:4567:89ab::a2b3:c4d5:e6f7")
+        actual = IPv6Address(parts: 0x0123, 0x4567, 0x89ab, 0, 0, 0xa2b3, 0xc4d5, 0xe6f7)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("::cdef:8091:a2b3:c4d5:e6f7")
+        actual = IPv6Address(parts: 0, 0, 0, 0xcdef, 0x8091, 0xa2b3, 0xc4d5, 0xe6f7)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
+        parsed = IPv6Address("::ffff:192.168.0.1")
+        actual = IPv6Address(parts: 0, 0, 0, 0, 0, 0xffff, 0xc0a8, 0x0001)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
     }
     
     /// Test that the swift version creates the same IP address as the C version.

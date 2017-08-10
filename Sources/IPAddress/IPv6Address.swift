@@ -47,9 +47,169 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
               | (UInt64(g.bigEndian) << 32) | (UInt64(h.bigEndian) << 48)
     }
     
-    public init?(_ description: String) {
-        high = 0
-        low = 0
+    public init?(_ str: String) {
+        var segments: [UInt16] = []
+        var zeroRunIndex: Int = -1
+        var currentValue: UInt32 = 0
+        var currentLength = 0
+        var hasHex = false
+        var wasColon = false
+        var parsingQuad = false
+        var segment: UInt64 = 0
+        var hi: UInt64 = 0
+        var lo: UInt64 = 0
+        var power: UInt32 = 16
+        var ipv4: UInt32 = 0
+        var ipv4Shift: UInt32 = 0
+        
+        for c in str.unicodeScalars {
+            let val: UInt32
+            if c >= "0" && c <= "9" {
+                val = c.value - UnicodeScalar("0")!.value
+                currentLength += 1
+                wasColon = false
+                currentValue *= power
+                currentValue += val
+            }
+            else if c >= "A" && c <= "F" {
+                val = c.value - UnicodeScalar("A")!.value + 10
+                currentLength += 1
+                hasHex = true
+                wasColon = false
+                currentValue *= power
+                currentValue += val
+            }
+            else if c >= "a" && c <= "f" {
+                val = c.value - UnicodeScalar("a")!.value + 10
+                currentLength += 1
+                hasHex = true
+                wasColon = false
+                currentValue *= power
+                currentValue += val
+            }
+            else if c == "." {
+                wasColon = false
+                if hasHex {
+                    return nil
+                }
+                if (currentLength == 0) {
+                    // Part had no digits.
+                    return nil
+                }
+                if !parsingQuad {
+                    var newV: UInt32 = 0
+                    // Convert hex to dec
+                    if currentValue > 0x100 {
+                        newV += ((currentValue & 0xF00) >> 8) * 100
+                    }
+                    if currentValue > 0x10 {
+                        newV += ((currentValue & 0xF0) >> 4) * 10
+                    }
+                    newV += currentValue & 0xF
+                    currentValue = newV
+                    power = 10
+                }
+                if (currentValue > 255) {
+                    // Part was too long.
+                    return nil
+                }
+                parsingQuad = true
+                hasHex = false
+                
+                ipv4 |= currentValue << ipv4Shift
+                currentValue = 0
+                ipv4Shift += 8
+                if (ipv4Shift > 24) {
+                    // Encountered too many points.
+                    return nil
+                }
+                currentLength = 0
+            }
+            else if c == ":" {
+                if wasColon == true {
+                    if zeroRunIndex >= 0 {
+                        return nil
+                    }
+                    zeroRunIndex = Int(segment)
+                    continue
+                }
+                if parsingQuad {
+                    return nil
+                }
+                wasColon = true
+                hasHex = false
+                
+                if (zeroRunIndex == -1) {
+                    let shift: UInt64 = (segment & 0b11) << 4
+                    // Same as dividing by 4.
+                    if segment >> 2 == 0 {
+                        hi |= UInt64(UInt16(currentValue).bigEndian) << shift
+                    } else {
+                        lo |= UInt64(UInt16(currentValue).bigEndian) << shift
+                    }
+                    segment += 1
+                } else {
+                    segments.append(UInt16(currentValue).bigEndian)
+                }
+                currentValue = 0
+                currentLength = 0
+            }
+        }
+        if (parsingQuad) {
+            if (ipv4Shift != 24) {
+                // Not enough parts.
+                return nil
+            }
+            if (currentLength == 0) {
+                // No final part.
+                return nil
+            }
+            if (currentValue > 255) {
+                // Part was too long.
+                return nil
+            }
+            ipv4 |= currentValue << 24
+            
+            if (zeroRunIndex == -1) {
+                segment += 2
+                lo |= UInt64(ipv4 & 0xFFFF_FFFF)
+            } else {
+                segments.append(UInt16(ipv4 & 0xFFFF))
+                segments.append(UInt16((ipv4 & 0xFFFF_0000) >> 16))
+            }
+            currentValue = 0
+            currentLength = 0
+        }
+        if (!parsingQuad && zeroRunIndex == -1) {
+            let shift: UInt64 = (segment & 0b11) << 4
+            // Same as dividing by 4.
+            if segment >> 2 == 0 {
+                hi |= UInt64(UInt16(currentValue).bigEndian) << shift
+            } else {
+                lo |= UInt64(UInt16(currentValue).bigEndian) << shift
+            }
+            segment += 1
+        } else if currentLength > 0 || segments.count > 0 {
+            if currentLength > 0 {
+                segments.append(UInt16(currentValue).bigEndian)
+            }
+            while (segment < 8 - segments.count) {
+                segment += 1
+            }
+            for val in segments {
+                let shift: UInt64 = (segment & 0b11) << 4
+                // Same as dividing by 4.
+                if segment >> 2 == 0 {
+                    hi |= UInt64(val) << shift
+                } else {
+                    lo |= UInt64(val) << shift
+                }
+                segment += 1
+            }
+        }
+        
+        high = hi
+        low = lo
     }
     
     /// Returns `true` if the IP address is an unspecified, if you listen on
