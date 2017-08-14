@@ -258,6 +258,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         return (high & 0xC0FF) == 0xC0FE
     }
     
+    /// Returns `true` if the IP address is in the range reserved for use in documentation.
+    public var isDocumentation: Bool {
+        return (high & 0xFFFF_FFFF) == 0xb80d_0120
+    }
+    
     /// Returns a string representation of the IP address. Will display IPv4 compatible/mapped addresses
     /// correctly, and will truncate zeroes when possible.
     public var description: String {

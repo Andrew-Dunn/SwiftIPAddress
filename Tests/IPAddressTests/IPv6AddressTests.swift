@@ -84,6 +84,12 @@ class IPv6AddressTests: XCTestCase {
     
     /// Test for IP Addresses that are reserved for documentation.
     func testIsDocumentation() {
+        XCTAssertTrue(IPv6Address(parts: 0x2001, 0xdb8, 0, 0, 0, 0, 0, 0).isDocumentation)
+        XCTAssertFalse(IPv6Address(parts: 0x2002, 0xdb8, 0, 0, 0, 0, 0, 0).isDocumentation)
+        XCTAssertFalse(IPv6Address(parts: 0x2001, 0xdb9, 0, 0, 0, 0, 0, 0).isDocumentation)
+        XCTAssertFalse(IPv6Address(parts: 0x2002, 0x1db8, 0, 0, 0, 0, 0, 0).isDocumentation)
+        XCTAssertTrue(IPv6Address(parts: 0x2001, 0x0db8, 0xffff, 0xffff,
+                                         0xffff, 0xffff, 0xffff, 0xffff).isDocumentation)
     }
     
     /// Test that predefined addresses are correct.
