@@ -383,22 +383,14 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     
     /// Returns an array of octets representing the parts of the IP address.
     public var octets: [UInt8] {
-        return [UInt8(high & 0xFF),
-                UInt8((high >> 8) & 0xFF),
-                UInt8((high >> 16) & 0xFF),
-                UInt8((high >> 24) & 0xFF),
-                UInt8((high >> 32) & 0xFF),
-                UInt8((high >> 40) & 0xFF),
-                UInt8((high >> 48) & 0xFF),
-                UInt8(high >> 56),
-                UInt8(low & 0xFF),
-                UInt8((low >> 8) & 0xFF),
-                UInt8((low >> 16) & 0xFF),
-                UInt8((low >> 24) & 0xFF),
-                UInt8((low >> 32) & 0xFF),
-                UInt8((low >> 40) & 0xFF),
-                UInt8((low >> 48) & 0xFF),
-                UInt8(low >> 56)]
+        return [UInt8(high & 0xFF), UInt8((high >> 8) & 0xFF),
+                UInt8((high >> 16) & 0xFF), UInt8((high >> 24) & 0xFF),
+                UInt8((high >> 32) & 0xFF), UInt8((high >> 40) & 0xFF),
+                UInt8((high >> 48) & 0xFF), UInt8(high >> 56),
+                UInt8(low & 0xFF), UInt8((low >> 8) & 0xFF),
+                UInt8((low >> 16) & 0xFF), UInt8((low >> 24) & 0xFF),
+                UInt8((low >> 32) & 0xFF), UInt8((low >> 40) & 0xFF),
+                UInt8((low >> 48) & 0xFF), UInt8(low >> 56)]
     }
     
     /// Returns an unspecified IP address.
