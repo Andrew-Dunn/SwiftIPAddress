@@ -243,8 +243,13 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         return high == 0 && low == 0x0100_0000_0000_0000
     }
     
+    /// Returns `true` if the IP address is a global unicast address **(2000::/3)**.
+    public var isUnicastGlobal: Bool {
+        return (high & 0xE0) == 0x20
+    }
+    
     /// Returns `true` if the IP address is a unique local address **(fc00::/7)**.
-    public var isUniqueLocal: Bool {
+    public var isUnicastUniqueLocal: Bool {
         return (high & 0xFE) == 0xFC
     }
     
@@ -256,6 +261,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     /// Returns `true` if the IP address is a (deprecated) unicast site-local address **(fec0::/10)**.
     public var isUnicastSiteLocal: Bool {
         return (high & 0xC0FF) == 0xC0FE
+    }
+    
+    /// Returns `true` if the IP address is a multicast address **(ff00::/8)**.
+    public var isMulticast: Bool {
+        return (high & 0xFF) == 0xFF
     }
     
     /// Returns `true` if the IP address is in the range reserved for use in documentation.
@@ -363,5 +373,47 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
         }
         return out
+    }
+    
+    /// Returns a quad of 32-bit unsigned ints representing the IP address.
+    public var words: (UInt32, UInt32, UInt32, UInt32) {
+        return (UInt32(high & 0xFFFFFFFF), UInt32((high & 0xFFFFFFFF_00000000) >> 32),
+                UInt32(low & 0xFFFFFFFF), UInt32((low & 0xFFFFFFFF_00000000) >> 32))
+    }
+    
+    /// Returns an array of octets representing the parts of the IP address.
+    public var octets: [UInt8] {
+        return [UInt8(high & 0xFF),
+                UInt8((high >> 8) & 0xFF),
+                UInt8((high >> 16) & 0xFF),
+                UInt8((high >> 24) & 0xFF),
+                UInt8((high >> 32) & 0xFF),
+                UInt8((high >> 40) & 0xFF),
+                UInt8((high >> 48) & 0xFF),
+                UInt8(high >> 56),
+                UInt8(low & 0xFF),
+                UInt8((low >> 8) & 0xFF),
+                UInt8((low >> 16) & 0xFF),
+                UInt8((low >> 24) & 0xFF),
+                UInt8((low >> 32) & 0xFF),
+                UInt8((low >> 40) & 0xFF),
+                UInt8((low >> 48) & 0xFF),
+                UInt8(low >> 56)]
+    }
+    
+    /// Returns an unspecified IP address.
+    public static var any: IPv6Address {
+        struct Static {
+            static let anyAddress = IPv6Address.init()
+        }
+        return Static.anyAddress
+    }
+    
+    /// Returns a representation of the IPv6 loopback address **::1**.
+    public static var loopback: IPv6Address {
+        struct Static {
+            static let loopbackAddress = IPv6Address.init(parts: 0, 0, 0, 0, 0, 0, 0, 1)
+        }
+        return Static.loopbackAddress
     }
 }

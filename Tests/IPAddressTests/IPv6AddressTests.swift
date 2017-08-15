@@ -52,34 +52,71 @@ class IPv6AddressTests: XCTestCase {
     }
     
     /// Test for private address detection.
-    func testIsUniqueLocal() {
-        XCTAssertFalse(IPv6Address(parts: 0, 0, 0, 0, 0, 0xffff, 0xdead, 0xbeef).isUniqueLocal)
-        XCTAssertTrue(IPv6Address(parts: 0xfc00, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertTrue(IPv6Address(parts: 0xfd00, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertFalse(IPv6Address(parts: 0xfe00, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertFalse(IPv6Address(parts: 0xff00, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertFalse(IPv6Address(parts: 0x00fc, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertFalse(IPv6Address(parts: 0x00fd, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertTrue(IPv6Address(parts: 0xfcff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff).isUniqueLocal)
-        XCTAssertTrue(IPv6Address(parts: 0xfdff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff).isUniqueLocal)
-        XCTAssertFalse(IPv6Address(parts: 0x0c, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
-        XCTAssertFalse(IPv6Address(parts: 0x0d, 0, 0, 0, 0, 0, 0, 0).isUniqueLocal)
+    func testIsUnicastUniqueLocal() {
+        XCTAssertFalse(IPv6Address(parts: 0, 0, 0, 0, 0, 0xffff, 0xdead, 0xbeef).isUnicastUniqueLocal)
+        XCTAssertTrue(IPv6Address(parts: 0xfc00, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertTrue(IPv6Address(parts: 0xfd00, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertFalse(IPv6Address(parts: 0xfe00, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertFalse(IPv6Address(parts: 0xff00, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertFalse(IPv6Address(parts: 0x00fc, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertFalse(IPv6Address(parts: 0x00fd, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertTrue(IPv6Address(parts: 0xfcff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff).isUnicastUniqueLocal)
+        XCTAssertTrue(IPv6Address(parts: 0xfdff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff).isUnicastUniqueLocal)
+        XCTAssertFalse(IPv6Address(parts: 0x0c, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
+        XCTAssertFalse(IPv6Address(parts: 0x0d, 0, 0, 0, 0, 0, 0, 0).isUnicastUniqueLocal)
     }
     
     /// Test for link-local address detection.
-    func testIsLinkLocal() {
+    func testIsUnicastLinkLocal() {
+        XCTAssertTrue(IPv6Address("fe80::")!.isUnicastLinkLocal)
+        XCTAssertTrue(IPv6Address("febf::")!.isUnicastLinkLocal)
+        XCTAssertFalse(IPv6Address("fec0::")!.isUnicastLinkLocal)
+        XCTAssertFalse(IPv6Address("ff80::")!.isUnicastLinkLocal)
+        XCTAssertFalse(IPv6Address("fe00::")!.isUnicastLinkLocal)
+        XCTAssertTrue(IPv6Address("fe80:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastLinkLocal)
+        XCTAssertTrue(IPv6Address("febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastLinkLocal)
+        XCTAssertFalse(IPv6Address("fec0:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastLinkLocal)
+        XCTAssertFalse(IPv6Address("ff80:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastLinkLocal)
+        XCTAssertFalse(IPv6Address("fe00:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastLinkLocal)
+
     }
     
     /// Test for globally routable address detection.
-    func testIsGlobal() {
+    func testIsUnicastGlobal() {
+        XCTAssertTrue(IPv6Address("2000::")!.isUnicastGlobal)
+        XCTAssertTrue(IPv6Address("3000::")!.isUnicastGlobal)
+        XCTAssertTrue(IPv6Address("3fff::")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("a000::")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("e000::")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("bfff::")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("ffff::")!.isUnicastGlobal)
+        XCTAssertTrue(IPv6Address("2000:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
+        XCTAssertTrue(IPv6Address("3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
+        XCTAssertTrue(IPv6Address("3fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("a000:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("e000:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("bfff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
+        XCTAssertFalse(IPv6Address("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isUnicastGlobal)
     }
     
     /// Test for multicast address detection.
     func testIsMulticast() {
-    }
-    
-    /// Test for broadcast address detection.
-    func testIsBroadcast() {
+        XCTAssertTrue(IPv6Address("ff00::")!.isMulticast)
+        XCTAssertTrue(IPv6Address("ffff::")!.isMulticast)
+        XCTAssertFalse(IPv6Address("fe00::")!.isMulticast)
+        XCTAssertFalse(IPv6Address("feff::")!.isMulticast)
+        XCTAssertFalse(IPv6Address("7f00::")!.isMulticast)
+        XCTAssertFalse(IPv6Address("7fff::")!.isMulticast)
+        XCTAssertFalse(IPv6Address("ef00::")!.isMulticast)
+        XCTAssertFalse(IPv6Address("efff::")!.isMulticast)
+        XCTAssertTrue(IPv6Address("ff00:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertTrue(IPv6Address("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertFalse(IPv6Address("fe00:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertFalse(IPv6Address("feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertFalse(IPv6Address("7f00:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertFalse(IPv6Address("7fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertFalse(IPv6Address("ef00:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
+        XCTAssertFalse(IPv6Address("efff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!.isMulticast)
     }
     
     /// Test for IP Addresses that are reserved for documentation.
@@ -94,6 +131,10 @@ class IPv6AddressTests: XCTestCase {
     
     /// Test that predefined addresses are correct.
     func testStaticValues() {
+        XCTAssertTrue(IPv6Address.any.isUnspecified)
+        XCTAssertEqual(IPv6Address.any, IPv6Address())
+        XCTAssertTrue(IPv6Address.loopback.isLoopback)
+        XCTAssertEqual(IPv6Address.loopback, IPv6Address("::1"))
     }
     
     /// Test that constructors set the value of the address properly.
@@ -102,6 +143,9 @@ class IPv6AddressTests: XCTestCase {
     
     /// Test that the octet array extraction works as expected.
     func testOctets() {
+        let address = IPv6Address(parts: 0x0123, 0x4567, 0x89ab, 0xcdef, 0x8091, 0xa2b3, 0xc4d5, 0xe6f7)
+        XCTAssertEqual(address.octets, [0x01,0x23, 0x45,0x67, 0x89,0xab, 0xcd,0xef,
+                                        0x80,0x91, 0xa2,0xb3, 0xc4,0xd5, 0xe6,0xf7])
     }
     
     /// Test that IP Addresses can be converted to a string correctly.
@@ -227,23 +271,59 @@ class IPv6AddressTests: XCTestCase {
     
     /// Test that the swift version creates the same IP address as the C version.
     func testEqualToPton() {
+        func cDecodeIPAddress(ipString: String) -> in6_addr? {
+            var addr: in6_addr = in6_addr()
+            let result = ipString.withCString { (cString: UnsafePointer<Int8>) -> Int32 in
+                return inet_pton(AF_INET6, cString, &addr)
+            }
+            if result == 0 {
+                return nil
+            }
+            return addr
+        }
+        
+        func swiftDecodeIPAddress(ipString: String) -> in6_addr? {
+            let result = IPv6Address(ipString)
+            if (result == nil) {
+                return nil
+            }
+            let words = result!.words
+            return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: words))
+        }
+        
+        var ipAddressString = "123:4567:89ab:cdef:8091:a2b3:c4d5:e6f7"
+        XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32 ==
+                      swiftDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32)
+        
+        ipAddressString = "::"
+        XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32 ==
+                      swiftDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32)
+        
+        ipAddressString = "::255.255.255.255"
+        XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
+        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32 ==
+                      swiftDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32)
     }
 
     static var allTests = [
-        ("testIsUnspecified",     testIsUnspecified),
-        ("testIsLoopback",        testIsLoopback),
-        ("testIsUniqueLocal",     testIsUniqueLocal),
-        ("testIsLinkLocal",       testIsLinkLocal),
-        ("testIsGlobal",          testIsGlobal),
-        ("testIsMulticast",       testIsMulticast),
-        ("testIsBroadcast",       testIsBroadcast),
-        ("testIsDocumentation",   testIsDocumentation),
-        ("testStaticValues",      testStaticValues),
-        ("testValue",             testValue),
-        ("testOctets",            testOctets),
-        ("testStringConversion",  testStringConversion),
-        ("testEqualityOperators", testEqualityOperators),
-        ("testStringConstructor", testStringConstructor),
-        ("testEqualToPton",       testEqualToPton)
+        ("testIsUnspecified",        testIsUnspecified),
+        ("testIsLoopback",           testIsLoopback),
+        ("testIsUnicastUniqueLocal", testIsUnicastUniqueLocal),
+        ("testIsUnicastLinkLocal",   testIsUnicastLinkLocal),
+        ("testIsUnicastGlobal",      testIsUnicastGlobal),
+        ("testIsMulticast",          testIsMulticast),
+        ("testIsDocumentation",      testIsDocumentation),
+        ("testStaticValues",         testStaticValues),
+        ("testValue",                testValue),
+        ("testOctets",               testOctets),
+        ("testStringConversion",     testStringConversion),
+        ("testEqualityOperators",    testEqualityOperators),
+        ("testStringConstructor",    testStringConstructor),
+        ("testEqualToPton",          testEqualToPton)
     ]
 }
