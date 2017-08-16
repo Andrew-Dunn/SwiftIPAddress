@@ -18,7 +18,7 @@ fileprivate let zero = UnicodeScalar("0")!
 fileprivate let nine = UnicodeScalar("9")!
 fileprivate let dot = UnicodeScalar(".")!
 
-// Use lookup tables to massively improve converting IP addresses to strings.
+// Use lookup tables to massively improve the performance of converting IP addresses to strings.
 fileprivate let firstQuad = [  "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
                               "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
                               "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",

@@ -184,6 +184,8 @@ class IPv6AddressTests: XCTestCase {
         XCTAssertEqual(address.description, "123:4567:89ab:cdef:8091:a2b3::")
         address = IPv6Address(parts: 0, 0, 0, 0, 0, 0xa2b3, 0xc4d5, 0xe6f7)
         XCTAssertEqual(address.description, "::a2b3:c4d5:e6f7")
+        address = IPv6Address(parts: 0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff)
+        XCTAssertEqual(address.description, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
         
         // Don't truncate a single zero.
         address = IPv6Address(parts: 0, 2, 3, 4, 5, 6, 7, 8)
