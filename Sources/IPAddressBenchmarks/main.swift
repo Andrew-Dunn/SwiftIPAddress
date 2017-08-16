@@ -18,8 +18,10 @@ import Foundation
 
 let ipCount = 1_000_000
 let doubleCount = Double(ipCount)
-let ipAddressStrings = Utils.randomIPAddressStrings(count: ipCount)
-let ipAddresses = Utils.randomIPv4s(count: ipCount)
+let ipv4AddressStrings = Utils.randomIPv4Strings(count: ipCount)
+let ipv4Addresses = Utils.randomIPv4s(count: ipCount)
+let ipv6AddressStrings = Utils.randomIPv6Strings(count: ipCount)
+let ipv6Addresses = Utils.randomIPv6s(count: ipCount)
 var timer = HighResolutionTimer()
 
 print("=====================================")
@@ -29,8 +31,8 @@ print("IPv4 Dotted Quad Parsing")
 print("Method,IPv4 addresses per second")
 
 timer.mark()
-for ipString in ipAddressStrings {
-    let result = Utils.swiftDecodeIPAddress(ipString: ipString)
+for ipString in ipv4AddressStrings {
+    let result = Utils.swiftDecodeIPv4Address(ipString: ipString)
     if result == nil {
         print("SwiftIPAddress,ERROR")
         exit(1)
@@ -40,8 +42,8 @@ var elapsedSeconds = timer.check()
 print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
 
 timer.mark()
-for ipString in ipAddressStrings {
-    let result = Utils.atonDecodeIPAddress(ipString: ipString)
+for ipString in ipv4AddressStrings {
+    let result = Utils.atonDecodeIPv4Address(ipString: ipString)
     if result == nil {
         print("inet_aton (Swift),ERROR")
         exit(1)
@@ -51,8 +53,8 @@ elapsedSeconds = timer.check()
 print("inet_aton (Swift),\( doubleCount / elapsedSeconds)")
 
 timer.mark()
-for ipString in ipAddressStrings {
-    let result = Utils.ptonDecodeIPAddress(ipString: ipString)
+for ipString in ipv4AddressStrings {
+    let result = Utils.ptonDecodeIPv4Address(ipString: ipString)
     if result == nil {
         print("inet_pton (Swift),ERROR")
         exit(1)
@@ -66,7 +68,7 @@ print("\nIPv4 Dotted Quad Presentation")
 print("Method,IPv4 addresses per second")
 
 timer.mark()
-for ip in ipAddresses {
+for ip in ipv4Addresses {
     let result = ip.description
     if result.isEmpty {
         print("SwiftIPAddress,ERROR")
@@ -77,8 +79,8 @@ elapsedSeconds = timer.check()
 print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
 
 timer.mark()
-for ip in ipAddresses {
-    let result = Utils.ntoaEncodeIPAddress(ip: ip)
+for ip in ipv4Addresses {
+    let result = Utils.ntoaEncodeIPv4Address(ip: ip)
     if result.isEmpty {
         print("inet_ntoa (Swift),ERROR")
         exit(1)
@@ -88,8 +90,59 @@ elapsedSeconds = timer.check()
 print("inet_ntoa (Swift),\( doubleCount / elapsedSeconds)")
 
 timer.mark()
-for ip in ipAddresses {
-    let result = Utils.ntopEncodeIPAddress(ip: ip)
+for ip in ipv4Addresses {
+    let result = Utils.ntopEncodeIPv4Address(ip: ip)
+    if result.isEmpty {
+        print("inet_ntop (Swift),ERROR")
+        exit(1)
+    }
+}
+elapsedSeconds = timer.check()
+print("inet_ntop (Swift),\( doubleCount / elapsedSeconds)")
+
+print("\nIPv6 Address Parsing")
+print("Method,IPv6 addresses per second")
+
+timer.mark()
+for ipString in ipv6AddressStrings {
+    let result = Utils.swiftDecodeIPv6Address(ipString: ipString)
+    if result == nil {
+        print("SwiftIPAddress,ERROR")
+        exit(1)
+    }
+}
+elapsedSeconds = timer.check()
+print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
+
+timer.mark()
+for ipString in ipv6AddressStrings {
+    let result = Utils.ptonDecodeIPv6Address(ipString: ipString)
+    if result == nil {
+        print("inet_pton (Swift),ERROR")
+        exit(1)
+    }
+}
+elapsedSeconds = timer.check()
+print("inet_pton (Swift),\( doubleCount / elapsedSeconds)")
+
+
+print("\nIPv6 Address Presentation")
+print("Method,IPv6 addresses per second")
+
+timer.mark()
+for ip in ipv6Addresses {
+    let result = ip.description
+    if result.isEmpty {
+        print("SwiftIPAddress,ERROR")
+        exit(1)
+    }
+}
+elapsedSeconds = timer.check()
+print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
+
+timer.mark()
+for ip in ipv6Addresses {
+    let result = Utils.ntopEncodeIPv6Address(ip: ip)
     if result.isEmpty {
         print("inet_ntop (Swift),ERROR")
         exit(1)
