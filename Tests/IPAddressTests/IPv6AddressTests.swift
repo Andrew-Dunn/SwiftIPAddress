@@ -371,26 +371,30 @@ class IPv6AddressTests: XCTestCase {
                 return nil
             }
             let words = result!.words
-            return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: words))
+            #if os(Linux)
+                return in6_addr(__in6_u: in6_addr.__Unnamed_union___in6_u(__u6_addr32: words))
+            #else
+                return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: words))
+            #endif
         }
         
         var ipAddressString = "123:4567:89ab:cdef:8091:a2b3:c4d5:e6f7"
         XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
         XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
-        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32 ==
-                      swiftDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32)
+        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)! ==
+                      swiftDecodeIPAddress(ipString: ipAddressString)!)
         
         ipAddressString = "::"
         XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
         XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
-        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32 ==
-                      swiftDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32)
+        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)! ==
+                      swiftDecodeIPAddress(ipString: ipAddressString)!)
         
         ipAddressString = "::255.255.255.255"
         XCTAssertNotNil(cDecodeIPAddress(ipString: ipAddressString))
         XCTAssertNotNil(swiftDecodeIPAddress(ipString: ipAddressString))
-        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32 ==
-                      swiftDecodeIPAddress(ipString: ipAddressString)!.__u6_addr.__u6_addr32)
+        XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)! ==
+                      swiftDecodeIPAddress(ipString: ipAddressString)!)
     }
 
     static var allTests = [
@@ -409,4 +413,14 @@ class IPv6AddressTests: XCTestCase {
         ("testStringConstructor",    testStringConstructor),
         ("testEqualToPton",          testEqualToPton)
     ]
+}
+
+extension in6_addr: Equatable {
+    public static func == (lhs: in6_addr, rhs: in6_addr) -> Bool {
+        #if os(Linux)
+            return lhs.__in6_u.__u6_addr32 == rhs.__in6_u.__u6_addr32
+        #else
+            return lhs.__u6_addr.__u6_addr32 == rhs.__u6_addr.__u6_addr32
+        #endif
+    }
 }
