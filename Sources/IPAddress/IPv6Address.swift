@@ -64,8 +64,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         var hasHex = false
         var wasColon = false
         var parsingQuad = false
-        var segment: Int = 0
-        var valBuf: [UInt16] = [0,0,0,0,0,0,0,0]
+        var valBuf: [UInt16] = []
         var power: UInt16 = 16
         var ipv4: UInt32 = 0
         var ipv4Shift: UInt32 = 0
@@ -138,7 +137,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                     if zeroRunIndex >= 0 {
                         return nil
                     }
-                    zeroRunIndex = Int(segment)
+                    zeroRunIndex = valBuf.count
                     continue
                 }
                 if parsingQuad {
@@ -148,8 +147,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 hasHex = false
                 
                 if (zeroRunIndex == -1) {
-                    valBuf[segment] = currentValue.bigEndian
-                    segment += 1
+                    valBuf.append(currentValue.bigEndian)
                 } else {
                     segments.append(currentValue.bigEndian)
                 }
@@ -175,9 +173,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             ipv4 |= UInt32(currentValue) << 24
             
             if (zeroRunIndex == -1) {
-                segment += 2
-                valBuf[6] = UInt16(ipv4 & 0xFFFF)
-                valBuf[7] = UInt16((ipv4 & 0xFFFF_0000) >> 16)
+                if valBuf.count != 6 {
+                    return nil
+                }
+                valBuf.append(UInt16(ipv4 & 0xFFFF))
+                valBuf.append(UInt16((ipv4 & 0xFFFF_0000) >> 16))
             } else {
                 segments.append(UInt16(ipv4 & 0xFFFF))
                 segments.append(UInt16((ipv4 & 0xFFFF_0000) >> 16))
@@ -186,31 +186,29 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             currentLength = 0
         }
         
-        if (!parsingQuad && zeroRunIndex == -1 && segment < 8) {
-            valBuf[segment] = currentValue.bigEndian
-            segment += 1
+        if (!parsingQuad && zeroRunIndex == -1) {
+            valBuf.append(currentValue.bigEndian)
         } else if currentLength > 0 || segments.count > 0 {
             if currentLength > 0 {
                 segments.append(UInt16(currentValue).bigEndian)
             }
-            if Int(segment) + segments.count > 8 {
+            if valBuf.count + segments.count > 8 {
                 return nil
             }
-            while (Int(segment) < 8 - segments.count) {
-                segment += 1
+            while (valBuf.count < 8 - segments.count) {
+                valBuf.append(0)
             }
             for val in segments {
-                valBuf[segment] = val
-                segment += 1
+                valBuf.append(val)
             }
-        } else if Int(segment) == zeroRunIndex {
-            segment = 8
+        } else if valBuf.count == zeroRunIndex {
+            while (valBuf.count < 8) {
+                valBuf.append(0)
+            }
         }
         
         
-        if segment > 8 {
-            return nil
-        } else if segment < 8 {
+        if valBuf.count != 8 {
             return nil
         }
         
