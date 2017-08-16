@@ -371,7 +371,12 @@ class IPv6AddressTests: XCTestCase {
                 return nil
             }
             let words = result!.words
-            return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: words))
+            #if os(Linux)
+                return in6_addr(__in6_u: in6_addr.__Unnamed_union___in6_u(__u6_addr32: words))
+            #else
+                return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: words))
+            #endif
+
         }
         
         var ipAddressString = "123:4567:89ab:cdef:8091:a2b3:c4d5:e6f7"
