@@ -65,6 +65,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         var wasColon = false
         var parsingQuad = false
         var valBuf: [UInt16] = []
+        valBuf.reserveCapacity(8)
         var power: UInt16 = 16
         var ipv4: UInt32 = 0
         var ipv4Shift: UInt32 = 0
