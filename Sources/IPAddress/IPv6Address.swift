@@ -203,9 +203,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             if Int(segment) + segments.count > 8 {
                 return nil
             }
-            while (Int(segment) < 8 - segments.count) {
-                segment += 1
-            }
+            
+            segment = UInt64(8 - segments.count)
             for val in segments {
                 let shift: UInt64 = (segment & 0b11) << 4
                 // Same as dividing by 4.
@@ -220,10 +219,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             segment = 8
         }
         
-        
-        if segment > 8 {
-            return nil
-        } else if segment < 8 {
+        if segment != 8 {
             return nil
         }
         
