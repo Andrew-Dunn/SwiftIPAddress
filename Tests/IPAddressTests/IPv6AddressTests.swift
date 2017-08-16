@@ -376,7 +376,6 @@ class IPv6AddressTests: XCTestCase {
             #else
                 return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: words))
             #endif
-
         }
         
         var ipAddressString = "123:4567:89ab:cdef:8091:a2b3:c4d5:e6f7"
