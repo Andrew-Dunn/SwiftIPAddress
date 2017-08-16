@@ -48,8 +48,14 @@ class Utils {
     
     static func randomIPv6() -> IPv6Address {
         #if os(Linux)
-            return IPv6Address(parts: UInt16(rand()), UInt16(rand()), UInt16(rand()), UInt16(rand()),
-                                      UInt16(rand()), UInt16(rand()), UInt16(rand()), UInt16(rand()))
+            let a: UInt32 = rand()
+            let b: UInt32 = rand()
+            let c: UInt32 = rand()
+            let d: UInt32 = rand()
+            return IPv6Address(parts: UInt16((a & 0xFFFF) >> 16), UInt16(a & 0xFFFF),
+                                      UInt16((b & 0xFFFF) >> 16), UInt16(b & 0xFFFF),
+                                      UInt16((c & 0xFFFF) >> 16), UInt16(c & 0xFFFF),
+                                      UInt16((d & 0xFFFF) >> 16), UInt16(d & 0xFFFF))
         #else
             return IPv6Address(parts: UInt16(arc4random_uniform(UInt32(UInt16.max))),
                                       UInt16(arc4random_uniform(UInt32(UInt16.max))),
