@@ -64,8 +64,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         var hasHex = false
         var wasColon = false
         var parsingQuad = false
-        var segment: UInt16 = 0
-        var valBuf: SegmentOctuple = (0,0,0,0,0,0,0,0)
+        var segment: Int = 0
+        var valBuf: [UInt16] = [0,0,0,0,0,0,0,0]
         var power: UInt16 = 16
         var ipv4: UInt32 = 0
         var ipv4Shift: UInt32 = 0
@@ -148,24 +148,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 hasHex = false
                 
                 if (zeroRunIndex == -1) {
-                    switch segment {
-                    case 0:
-                        valBuf.0 = currentValue.bigEndian
-                    case 1:
-                        valBuf.1 = currentValue.bigEndian
-                    case 2:
-                        valBuf.2 = currentValue.bigEndian
-                    case 3:
-                        valBuf.3 = currentValue.bigEndian
-                    case 4:
-                        valBuf.4 = currentValue.bigEndian
-                    case 5:
-                        valBuf.5 = currentValue.bigEndian
-                    case 6:
-                        valBuf.6 = currentValue.bigEndian
-                    default:
-                        valBuf.7 = currentValue.bigEndian
-                    }
+                    valBuf[segment] = currentValue.bigEndian
                     segment += 1
                 } else {
                     segments.append(currentValue.bigEndian)
@@ -193,8 +176,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             
             if (zeroRunIndex == -1) {
                 segment += 2
-                valBuf.6 = UInt16(ipv4 & 0xFFFF)
-                valBuf.7 = UInt16((ipv4 & 0xFFFF_0000) >> 16)
+                valBuf[6] = UInt16(ipv4 & 0xFFFF)
+                valBuf[7] = UInt16((ipv4 & 0xFFFF_0000) >> 16)
             } else {
                 segments.append(UInt16(ipv4 & 0xFFFF))
                 segments.append(UInt16((ipv4 & 0xFFFF_0000) >> 16))
@@ -203,25 +186,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             currentLength = 0
         }
         
-        if (!parsingQuad && zeroRunIndex == -1) {
-            switch segment {
-            case 0:
-                valBuf.0 = currentValue.bigEndian
-            case 1:
-                valBuf.1 = currentValue.bigEndian
-            case 2:
-                valBuf.2 = currentValue.bigEndian
-            case 3:
-                valBuf.3 = currentValue.bigEndian
-            case 4:
-                valBuf.4 = currentValue.bigEndian
-            case 5:
-                valBuf.5 = currentValue.bigEndian
-            case 6:
-                valBuf.6 = currentValue.bigEndian
-            default:
-                valBuf.7 = currentValue.bigEndian
-            }
+        if (!parsingQuad && zeroRunIndex == -1 && segment < 8) {
+            valBuf[segment] = currentValue.bigEndian
             segment += 1
         } else if currentLength > 0 || segments.count > 0 {
             if currentLength > 0 {
@@ -234,24 +200,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 segment += 1
             }
             for val in segments {
-                switch segment {
-                case 0:
-                    valBuf.0 = val
-                case 1:
-                    valBuf.1 = val
-                case 2:
-                    valBuf.2 = val
-                case 3:
-                    valBuf.3 = val
-                case 4:
-                    valBuf.4 = val
-                case 5:
-                    valBuf.5 = val
-                case 6:
-                    valBuf.6 = val
-                default:
-                    valBuf.7 = val
-                }
+                valBuf[segment] = val
                 segment += 1
             }
         } else if Int(segment) == zeroRunIndex {
@@ -265,7 +214,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             return nil
         }
         
-        value = valBuf
+        value = (valBuf[0], valBuf[1], valBuf[2], valBuf[3], valBuf[4], valBuf[5], valBuf[6], valBuf[7])
     }
     
     /// Returns `true` if the IP address is an unspecified, if you listen on
