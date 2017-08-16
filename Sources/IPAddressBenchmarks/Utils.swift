@@ -30,7 +30,7 @@ class Utils {
         #endif
     }
     
-    static func randomIPAddressString() -> String {
+    static func randomIPv4String() -> String {
         let a = randomByte()
         let b = randomByte()
         let c = randomByte()
@@ -46,10 +46,26 @@ class Utils {
         #endif
     }
     
-    static func randomIPAddressStrings(count: Int) -> [String] {
+    static func randomIPv6() -> IPv6Address {
+        #if os(Linux)
+            return IPv6Address(parts: UInt16(rand()), UInt16(rand()), UInt16(rand()), UInt16(rand()),
+                                      UInt16(rand()), UInt16(rand()), UInt16(rand()), UInt16(rand()))
+        #else
+            return IPv6Address(parts: UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
+                                      UInt16(arc4random_uniform(UInt32(UInt16.max))))
+        #endif
+    }
+    
+    static func randomIPv4Strings(count: Int) -> [String] {
         var addressStrings: [String] = []
         for _ in 0..<count {
-            addressStrings.append(randomIPAddressString())
+            addressStrings.append(randomIPv4String())
         }
         return addressStrings
     }
@@ -62,7 +78,23 @@ class Utils {
         return addresses
     }
     
-    static func atonDecodeIPAddress(ipString: String) -> in_addr? {
+    static func randomIPv6Strings(count: Int) -> [String] {
+        var addressStrings: [String] = []
+        for _ in 0..<count {
+            addressStrings.append(randomIPv6().description)
+        }
+        return addressStrings
+    }
+    
+    static func randomIPv6s(count: Int) -> [IPv6Address] {
+        var addresses: [IPv6Address] = []
+        for _ in 0..<count {
+            addresses.append(randomIPv6())
+        }
+        return addresses
+    }
+
+    static func atonDecodeIPv4Address(ipString: String) -> in_addr? {
         var addr: in_addr = in_addr()
         let result = inet_aton(ipString, &addr)
         if result == 0 {
@@ -71,7 +103,7 @@ class Utils {
         return addr
     }
     
-    static func ptonDecodeIPAddress(ipString: String) -> in_addr? {
+    static func ptonDecodeIPv4Address(ipString: String) -> in_addr? {
         var addr: in_addr = in_addr()
         let result = inet_pton(AF_INET, ipString, &addr)
         if result == 0 {
@@ -80,7 +112,7 @@ class Utils {
         return addr
     }
     
-    static func swiftDecodeIPAddress(ipString: String) -> in_addr? {
+    static func swiftDecodeIPv4Address(ipString: String) -> in_addr? {
         let result = IPv4Address(ipString)
         if (result == nil) {
             return nil
@@ -90,7 +122,7 @@ class Utils {
                 integerLiteral: UInt32(fromIPv4Address: result!)))
     }
     
-    static func ntoaEncodeIPAddress(ip: IPv4Address) -> String {
+    static func ntoaEncodeIPv4Address(ip: IPv4Address) -> String {
         let addr: in_addr = in_addr(
             s_addr: in_addr_t(
                 integerLiteral: UInt32(fromIPv4Address: ip)))
@@ -101,11 +133,51 @@ class Utils {
         return String(cString: result!)
     }
     
-    static func ntopEncodeIPAddress(ip: IPv4Address) -> String {
+    static func ntopEncodeIPv4Address(ip: IPv4Address) -> String {
         var cString: [Int8] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         let addr: [in_addr] = [in_addr(
             s_addr: in_addr_t(
                 integerLiteral: UInt32(fromIPv4Address: ip)))]
+        let result = inet_ntop(AF_INET, addr, &cString, 16)
+        if result == nil {
+            return ""
+        }
+        return String(cString: result!)
+    }
+    
+    static func ptonDecodeIPv6Address(ipString: String) -> in6_addr? {
+        var addr: in6_addr = in6_addr()
+        let result = inet_pton(AF_INET6, ipString, &addr)
+        if result == 0 {
+            return nil
+        }
+        return addr
+    }
+    
+    static func swiftDecodeIPv6Address(ipString: String) -> in6_addr? {
+        let result = IPv6Address(ipString)
+        if (result == nil) {
+            return nil
+        }
+        #if os(Linux)
+            return in6_addr(__in6_u: in6_addr.__Unnamed_union___in6_u(__u6_addr32: result!.words))
+        #else
+            return in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: result!.words))
+        #endif
+    }
+    
+    static func ntopEncodeIPv6Address(ip: IPv6Address) -> String {
+        var cString: [Int8] = []
+        cString.reserveCapacity(Int(INET6_ADDRSTRLEN))
+        #if os(Linux)
+            let addr: [in6_addr] = [
+                in6_addr(__in6_u: in6_addr.__Unnamed_union___in6_u(__u6_addr32: ip.words))
+            ]
+        #else
+            let addr: [in6_addr] = [
+                in6_addr(__u6_addr: in6_addr.__Unnamed_union___u6_addr(__u6_addr32: ip.words))
+            ]
+        #endif
         let result = inet_ntop(AF_INET, addr, &cString, 16)
         if result == nil {
             return ""
