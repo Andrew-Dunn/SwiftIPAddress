@@ -38,7 +38,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     ///   - a: The *first* component of the IP address.
     ///   - b: The *second* component of the IP address.
     ///   - c: The *third* component of the IP address.
-    ///   - d: The *fourth & final* component of the IP address.
+    ///   - d: The *fourth* component of the IP address.
+    ///   - e: The *fifth* component of the IP address.
+    ///   - f: The *sixth* component of the IP address.
+    ///   - g: The *seventh* component of the IP address.
+    ///   - h: The *eighth* component of the IP address.
     public init (parts a: UInt16, _ b: UInt16, _ c: UInt16, _ d: UInt16,
                      _ e: UInt16, _ f: UInt16, _ g: UInt16, _ h: UInt16) {
         high = UInt64(a.bigEndian) | (UInt64(b.bigEndian) << 16)
