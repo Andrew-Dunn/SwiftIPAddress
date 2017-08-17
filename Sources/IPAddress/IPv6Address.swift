@@ -48,7 +48,8 @@ fileprivate let byte2 = ["00","01","02","03","04","05","06","07","08","09","0a",
                          "d0","d1","d2","d3","d4","d5","d6","d7","d8","d9","da","db","dc","dd","de","df",
                          "e0","e1","e2","e3","e4","e5","e6","e7","e8","e9","ea","eb","ec","ed","ee","ef",
                          "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff"
-                        ].map { Array($0.utf8) }
+                        ].map { Array($0.utf8).map{ UInt8($0) } }
+fileprivate let colon: UInt8 = 0x3A
 
 /// Represents an IP version 6 address.
 ///
@@ -389,52 +390,44 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             segment += 1
         }
         
-        var out = [UInt8].init(repeating: 0, count: 40)
-        var ptr = 0
+        var out = [UInt8].init()
+        out.reserveCapacity(45)
         // Special handling for when the first output segment is the longest zero run.
         if (longestZeroRun == 0) && (longestZeroRunLength > 1) {
-            out[ptr] = 0x3A
-            ptr += 1
+            out.append(colon)
         }
         var i = 0
         while i < 8 {
             if (longestZeroRun == i) && (longestZeroRunLength > 1) {
-                out[ptr] = 0x3A
-                ptr += 1
+                out.append(colon)
                 i += longestZeroRunLength
                 continue
             }
             let word = segments[i]
             if word == 0 {
-                out[ptr] = 0x30
-                ptr += 1
+                out.append(byte2[0][0])
             } else if word & 0xFF == 0 {
                 let byte = word >> 8
                 if byte >= 0x10 {
-                    out[ptr] = byte2[byte][0]
-                    ptr += 1
+                    out.append(byte2[byte][0])
                 }
-                out[ptr] = byte2[byte][1]
-                ptr += 1
+                out.append(byte2[byte][1])
             } else {
                 let hi = word & 0xFF
                 let lo = word >> 8
                 if hi >= 0x10 {
-                    out[ptr] = byte2[hi][0]
-                    ptr += 1
+                    out.append(byte2[hi][0])
                 }
-                out[ptr] = byte2[hi][1]
-                out[ptr+1] = byte2[lo][0]
-                out[ptr+2] = byte2[lo][1]
-                ptr += 3
+                out.append(byte2[hi][1])
+                out.append(byte2[lo][0])
+                out.append(byte2[lo][1])
             }
             i += 1
             if i < 8 {
-                out[ptr] = 0x3A
-                ptr += 1
+                out.append(colon)
             }
         }
-        return String.init(cString: out)
+        return String.init(decoding: out, as: Unicode.ASCII.self)
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
