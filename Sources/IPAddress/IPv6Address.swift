@@ -413,23 +413,23 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 let byte = word >> 8
                 if byte >= 0x10 {
                     out[ptr] = byte2[byte][0]
-                    ptr += 2
-                } else {
                     ptr += 1
                 }
-                out[ptr - 1] = byte2[byte][1]
+                out[ptr] = byte2[byte][1]
+                ptr += 1
             } else {
                 let hi = word & 0xFF
                 let lo = word >> 8
                 if hi >= 0x10 {
                     out[ptr] = byte2[hi][0]
-                    ptr += 4
-                } else {
-                    ptr += 3
+                    ptr += 1
                 }
-                out[ptr - 3] = byte2[hi][1]
-                out[ptr - 2] = byte2[lo][0]
-                out[ptr - 1] = byte2[lo][1]
+                out[ptr] = byte2[hi][1]
+                ptr += 1
+                out[ptr] = byte2[lo][0]
+                ptr += 1
+                out[ptr] = byte2[lo][1]
+                ptr += 1
             }
             i += 1
             if i < 8 {
@@ -438,11 +438,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
         }
         
-//        #if swift(>=4.0)
-//            return String.init(decoding: out[0..<ptr], as: Unicode.ASCII.self)
-//        #else
+        #if swift(>=4.0)
+            return String.init(decoding: out[0..<ptr], as: Unicode.ASCII.self)
+        #else
             return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out[0..<ptr])
-//        #endif
+        #endif
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
