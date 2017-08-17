@@ -91,7 +91,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     public init?(_ str: String) {
         var segments: [UInt16] = []
         var zeroRunIndex: Int = -1
-        var currentValue: UInt32 = 0
+        var currentValue: UInt16 = 0
         var currentLength = 0
         var hasHex = false
         var wasColon = false
@@ -99,36 +99,36 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         var segment: UInt64 = 0
         var hi: UInt64 = 0
         var lo: UInt64 = 0
-        var power: UInt32 = 16
+        var power: UInt16 = 16
         var ipv4: UInt32 = 0
         var ipv4Shift: UInt32 = 0
         
-        for c in str.unicodeScalars {
-            let val: UInt32
-            if c >= "0" && c <= "9" {
-                val = c.value - UnicodeScalar("0")!.value
+        for c in str.utf8 {
+            let val: UInt16
+            if c >= 0x30 && c <= 0x39 /* 0-9 */ {
+                val = UInt16(c - 0x30)
                 currentLength += 1
                 wasColon = false
                 currentValue *= power
                 currentValue += val
             }
-            else if c >= "A" && c <= "F" {
-                val = c.value - UnicodeScalar("A")!.value + 10
-                currentLength += 1
-                hasHex = true
-                wasColon = false
-                currentValue *= power
-                currentValue += val
-            }
-            else if c >= "a" && c <= "f" {
-                val = c.value - UnicodeScalar("a")!.value + 10
+            else if c >= 0x41 && c <= 0x46 /* A-F */{
+                val = UInt16(c - 0x41 + 10)
                 currentLength += 1
                 hasHex = true
                 wasColon = false
                 currentValue *= power
                 currentValue += val
             }
-            else if c == "." {
+            else if c >= 0x61 && c <= 0x66 /* a-f */ {
+                val = UInt16(c - 0x61 + 10)
+                currentLength += 1
+                hasHex = true
+                wasColon = false
+                currentValue *= power
+                currentValue += val
+            }
+            else if c == 0x46 /* . */ {
                 wasColon = false
                 if hasHex {
                     return nil
@@ -138,7 +138,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                     return nil
                 }
                 if !parsingQuad {
-                    var newV: UInt32 = 0
+                    var newV: UInt16 = 0
                     // Convert hex to dec
                     if currentValue > 0x100 {
                         newV += ((currentValue & 0xF00) >> 8) * 100
@@ -157,7 +157,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 parsingQuad = true
                 hasHex = false
                 
-                ipv4 |= currentValue << ipv4Shift
+                ipv4 |= UInt32(currentValue) << ipv4Shift
                 currentValue = 0
                 ipv4Shift += 8
                 if (ipv4Shift > 24) {
@@ -166,7 +166,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 }
                 currentLength = 0
             }
-            else if c == ":" {
+            else if c == 0x3A /* : */ {
                 if wasColon == true {
                     if zeroRunIndex >= 0 {
                         return nil
@@ -184,13 +184,13 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                     let shift: UInt64 = (segment & 0b11) << 4
                     // Same as dividing by 4.
                     if segment >> 2 == 0 {
-                        hi |= UInt64(UInt16(currentValue).bigEndian) << shift
+                        hi |= UInt64(currentValue.bigEndian) << shift
                     } else {
-                        lo |= UInt64(UInt16(currentValue).bigEndian) << shift
+                        lo |= UInt64(currentValue.bigEndian) << shift
                     }
                     segment += 1
                 } else {
-                    segments.append(UInt16(currentValue).bigEndian)
+                    segments.append(currentValue.bigEndian)
                 }
                 currentValue = 0
                 currentLength = 0
@@ -211,7 +211,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 // Part was too long.
                 return nil
             }
-            ipv4 |= currentValue << 24
+            ipv4 |= UInt32(currentValue) << 24
             
             if (zeroRunIndex == -1) {
                 segment += 2
@@ -438,11 +438,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
         }
         
-//        #if swift(>=4.0)
-            return String.init(decoding: out[0..<ptr], as: Unicode.ASCII.self)
-//        #else
-//            return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out[0..<ptr])
-//        #endif
+        return String.init(decoding: out[0..<ptr], as: Unicode.ASCII.self)
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
