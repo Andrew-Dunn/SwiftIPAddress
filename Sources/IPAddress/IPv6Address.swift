@@ -438,11 +438,11 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
         }
         
-        #if swift(>=4.0)
+//        #if swift(>=4.0)
             return String.init(decoding: out[0..<ptr], as: Unicode.ASCII.self)
-        #else
-            return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out[0..<ptr])
-        #endif
+//        #else
+//            return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out[0..<ptr])
+//        #endif
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
