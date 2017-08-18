@@ -331,10 +331,10 @@ class IPv6AddressTests: XCTestCase {
         actual = IPv6Address(parts: 0, 0, 0, 0, 0, 0, 0xffff, 0xffff)
         XCTAssertNotNil(parsed)
         XCTAssertEqual(parsed, actual)
-        XCTAssertNotNil(parsed)
-        XCTAssertEqual(parsed, actual)
         parsed = IPv6Address("123:4567:89AB:cDeF:8091:a2B3:C4D5:E6F7")
         actual = IPv6Address(parts: 0x0123, 0x4567, 0x89ab, 0xcdef, 0x8091, 0xa2b3, 0xc4d5, 0xe6f7)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed, actual)
         
         parsed = IPv6Address("123:4567:89ab:cdef:8091:a2b3:c4d5")
         XCTAssertNil(parsed)

@@ -128,7 +128,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 currentValue *= power
                 currentValue += val
             }
-            else if c == 0x46 /* . */ {
+            else if c == 0x2E /* . */ {
                 wasColon = false
                 if hasHex {
                     return nil
