@@ -430,7 +430,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
         }
         
-        return String.init(decoding: out.prefix(ptr), as: Unicode.ASCII.self)
+        return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out.prefix(ptr))
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
