@@ -38,17 +38,21 @@ SwiftIPAddress is installed using the Swift Package Manager. It is compatible wi
 projects using Swift 3.0 and later. To use it in your project, simply add the following
 line to your package's dependencies:
 
-    dependencies: [
-        .Package(url: "https://github.com/Andrew-Dunn/SwiftIPAddress.git",
-                      "1.0.0"),
-    ]
+```swift
+dependencies: [
+    .Package(url: "https://github.com/Andrew-Dunn/SwiftIPAddress.git",
+                  "1.0.0"),
+]
+```
 
 It may then be used directly by importing the `IPAddress` package at the start of your
 sources files.
 
-    import IPAddress
-    
-    let ip = IPv6Address("2b88:b6::14")
+```swift
+import IPAddress
+
+let ip = IPv6Address("2b88:b6::14")
+```
 
 ## API
 
