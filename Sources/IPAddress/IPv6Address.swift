@@ -14,6 +14,34 @@
 // limitations under the License.
 //
 
+// Use lookup tables to massively improve the performance of converting IP addresses to strings.
+fileprivate let lut = ["00","01","02","03","04","05","06","07","08","09","0a","0b","0c","0d","0e","0f",
+                       "10","11","12","13","14","15","16","17","18","19","1a","1b","1c","1d","1e","1f",
+                       "20","21","22","23","24","25","26","27","28","29","2a","2b","2c","2d","2e","2f",
+                       "30","31","32","33","34","35","36","37","38","39","3a","3b","3c","3d","3e","3f",
+                       "40","41","42","43","44","45","46","47","48","49","4a","4b","4c","4d","4e","4f",
+                       "50","51","52","53","54","55","56","57","58","59","5a","5b","5c","5d","5e","5f",
+                       "60","61","62","63","64","65","66","67","68","69","6a","6b","6c","6d","6e","6f",
+                       "70","71","72","73","74","75","76","77","78","79","7a","7b","7c","7d","7e","7f",
+                       "80","81","82","83","84","85","86","87","88","89","8a","8b","8c","8d","8e","8f",
+                       "90","91","92","93","94","95","96","97","98","99","9a","9b","9c","9d","9e","9f",
+                       "a0","a1","a2","a3","a4","a5","a6","a7","a8","a9","aa","ab","ac","ad","ae","af",
+                       "b0","b1","b2","b3","b4","b5","b6","b7","b8","b9","ba","bb","bc","bd","be","bf",
+                       "c0","c1","c2","c3","c4","c5","c6","c7","c8","c9","ca","cb","cc","cd","ce","cf",
+                       "d0","d1","d2","d3","d4","d5","d6","d7","d8","d9","da","db","dc","dd","de","df",
+                       "e0","e1","e2","e3","e4","e5","e6","e7","e8","e9","ea","eb","ec","ed","ee","ef",
+                       "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff"
+                      ].map { Array($0.utf8) }
+fileprivate let colon: UInt8 = 0x3A
+fileprivate let zero: UInt8 = 0x30
+fileprivate let nine: UInt8 = 0x39
+fileprivate let dot: UInt8 = 0x2E
+fileprivate let a: UInt8 = 0x61
+fileprivate let f: UInt8 = 0x66
+fileprivate let A: UInt8 = 0x41
+fileprivate let F: UInt8 = 0x46
+
+
 /// Represents an IP version 6 address.
 ///
 /// Immutable and space efficient.
@@ -54,7 +82,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     public init?(_ str: String) {
         var segments: [UInt16] = []
         var zeroRunIndex: Int = -1
-        var currentValue: UInt32 = 0
+        var currentValue: UInt16 = 0
         var currentLength = 0
         var hasHex = false
         var wasColon = false
@@ -62,37 +90,38 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         var segment: UInt64 = 0
         var hi: UInt64 = 0
         var lo: UInt64 = 0
-        var power: UInt32 = 16
+        var power: UInt16 = 16
         var ipv4: UInt32 = 0
         var ipv4Shift: UInt32 = 0
         
-        for c in str.unicodeScalars {
-            let val: UInt32
-            if c >= "0" && c <= "9" {
-                val = c.value - UnicodeScalar("0")!.value
+        for c in str.utf8 {
+            let val: UInt16
+            if c >= zero && c <= nine {
+                val = UInt16(c - zero)
                 currentLength += 1
                 wasColon = false
                 currentValue *= power
                 currentValue += val
             }
-            else if c >= "A" && c <= "F" {
-                val = c.value - UnicodeScalar("A")!.value + 10
-                currentLength += 1
-                hasHex = true
-                wasColon = false
-                currentValue *= power
-                currentValue += val
-            }
-            else if c >= "a" && c <= "f" {
-                val = c.value - UnicodeScalar("a")!.value + 10
+            else if c >= A && c <= F {
+                val = UInt16(c - A + 10)
                 currentLength += 1
                 hasHex = true
                 wasColon = false
                 currentValue *= power
                 currentValue += val
             }
-            else if c == "." {
+            else if c >= a && c <= f /* a-f */ {
+                val = UInt16(c - a + 10)
+                currentLength += 1
+                hasHex = true
                 wasColon = false
+                currentValue *= power
+                currentValue += val
+            }
+            else if c == dot /* . */ {
+                wasColon = false
+                // A segment with hex characters cannot be a part of an IPv4 address.
                 if hasHex {
                     return nil
                 }
@@ -100,9 +129,9 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                     // Part had no digits.
                     return nil
                 }
+                // The first part of the quad needs to be re-calculated, as it was originally parsed as hex.
                 if !parsingQuad {
-                    var newV: UInt32 = 0
-                    // Convert hex to dec
+                    var newV: UInt16 = 0
                     if currentValue > 0x100 {
                         newV += ((currentValue & 0xF00) >> 8) * 100
                     }
@@ -120,7 +149,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 parsingQuad = true
                 hasHex = false
                 
-                ipv4 |= currentValue << ipv4Shift
+                ipv4 |= UInt32(currentValue) << ipv4Shift
                 currentValue = 0
                 ipv4Shift += 8
                 if (ipv4Shift > 24) {
@@ -129,7 +158,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 }
                 currentLength = 0
             }
-            else if c == ":" {
+            else if c == colon {
                 if wasColon == true {
                     if zeroRunIndex >= 0 {
                         return nil
@@ -147,13 +176,13 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                     let shift: UInt64 = (segment & 0b11) << 4
                     // Same as dividing by 4.
                     if segment >> 2 == 0 {
-                        hi |= UInt64(UInt16(currentValue).bigEndian) << shift
+                        hi |= UInt64(currentValue.bigEndian) << shift
                     } else {
-                        lo |= UInt64(UInt16(currentValue).bigEndian) << shift
+                        lo |= UInt64(currentValue.bigEndian) << shift
                     }
                     segment += 1
                 } else {
-                    segments.append(UInt16(currentValue).bigEndian)
+                    segments.append(currentValue.bigEndian)
                 }
                 currentValue = 0
                 currentLength = 0
@@ -174,7 +203,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 // Part was too long.
                 return nil
             }
-            ipv4 |= currentValue << 24
+            ipv4 |= UInt32(currentValue) << 24
             
             if (zeroRunIndex == -1) {
                 segment += 2
@@ -276,15 +305,14 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     /// Returns a string representation of the IP address. Will display IPv4 compatible/mapped addresses
     /// correctly, and will truncate zeroes when possible.
     public var description: String {
-        var segment: UInt64 = 0
-        var outputSegs: [String] = [""]
-        
+        var segment: Int = 0
         var isZeroRun = false
         var zeroRunLength = 0
         var longestZeroRun = -1
-        var currentOutputSeg = 0
+        var currentZeroRun = -1
         var longestZeroRunLength = 0
         
+        // First task is to find the longest zero-run.
         // First 64 bits are 0.
         if high == 0 {
             // These cases need special handlers to prevent them from being presented as IPv4 compatible.
@@ -310,69 +338,99 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             isZeroRun = true
             zeroRunLength = 4
             longestZeroRun = 0
+            currentZeroRun = 0
             longestZeroRunLength = 4
             segment = 4
         }
         
+        var segments: [Int] = [0,0,0,0,0,0,0,0]
         while segment < 8 {
             // Calculate which 16-bit word we should be handling. (x & 0b11) << 4, is equivalent to
             // (x % 4) * 16.
-            let shift: UInt64 = (segment & 0b11) << 4
-            let word: UInt64
+            let shift: UInt64 = UInt64(segment & 0b11) << 4
+            let word: Int
             // Same as dividing by 4.
             if segment >> 2 == 0 {
-                word = (high >> shift) & 0xFFFF
+                word = Int((high >> shift) & 0xFFFF)
             } else {
-                word = (low >> shift) & 0xFFFF
+                word = Int((low >> shift) & 0xFFFF)
             }
+            segments[segment] = Int(word)
             
             let isZero = (word == 0)
             
             if segment == 0 && isZero {
                 // isZeroRun will be misconfigured if the first segment is a zero, so let's fix that.
                 isZeroRun = true
+                currentZeroRun = 0
             } else if segment != 0 && isZero != isZeroRun {
-                // Add logic for when a run of zeroes ends/begins.
-                currentOutputSeg += 1
-                outputSegs.append("")
                 zeroRunLength = 0
                 isZeroRun = isZero
+                if (isZero) {
+                    currentZeroRun = segment
+                }
             }
             
             if (isZero) {
                 zeroRunLength += 1
                 if zeroRunLength > longestZeroRunLength {
                     longestZeroRunLength = zeroRunLength
-                    longestZeroRun = currentOutputSeg
+                    longestZeroRun = currentZeroRun
                 }
-                outputSegs[currentOutputSeg] += "0"
-            } else {
-                let lo = (word >> 8) & 0xFF
-                let hi = word & 0xFF
-                outputSegs[currentOutputSeg] += String(lo | (hi << 8), radix: 16, uppercase: false)
             }
             
             segment += 1
-            // The ':' character should only be used in-between segments, not at the end of the entire
-            // address.
-            if (segment != 8) {
-                outputSegs[currentOutputSeg] += ":"
+        }
+        
+        var out = [UInt8].init(repeating: 0, count: 45)
+        var ptr = 0
+        // Special handling for when the first output segment is the longest zero run.
+        if (longestZeroRun == 0) && (longestZeroRunLength > 1) {
+            out[ptr] = colon
+            ptr += 1
+        }
+        var i = 0
+        while i < 8 {
+            if (longestZeroRun == i) && (longestZeroRunLength > 1) {
+                out[ptr] = colon
+                ptr += 1
+                i += longestZeroRunLength
+                continue
+            }
+            let word = segments[i]
+            if word == 0 {
+                out[ptr] = 0x30
+                ptr += 1
+            } else if word & 0xFF == 0 {
+                let byte = word >> 8
+                if byte >= 0x10 {
+                    out[ptr] = lut[byte][0]
+                    ptr += 1
+                }
+                out[ptr] = lut[byte][1]
+                ptr += 1
+            } else {
+                let hi = word & 0xFF
+                let lo = word >> 8
+                if hi >= 0x10 {
+                    out[ptr] = lut[hi][0]
+                    ptr += 1
+                }
+                out[ptr] = lut[hi][1]
+                ptr += 1
+                out[ptr] = lut[lo][0]
+                ptr += 1
+                out[ptr] = lut[lo][1]
+                ptr += 1
+            }
+            i += 1
+            if i < 8 {
+                out[ptr] = colon
+                ptr += 1
             }
         }
         
-        var out = ""
-        // Special handling for when the first output segment is the longest zero run.
-        if (longestZeroRun == 0) && (longestZeroRunLength > 1) {
-            out = ":"
-        }
-        for i in 0..<outputSegs.count {
-            if (longestZeroRun == i) && (longestZeroRunLength > 1) {
-                out += ":"
-            } else {
-                out += outputSegs[i]
-            }
-        }
-        return out
+        return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out.prefix(ptr))
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
