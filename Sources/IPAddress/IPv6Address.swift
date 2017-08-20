@@ -79,6 +79,12 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
               | (UInt64(g.bigEndian) << 32) | (UInt64(h.bigEndian) << 48)
     }
     
+    /// Intialises a new instance from a string representaion of an IPv6
+    /// address.
+    ///
+    /// - Parameter str: A string representation of an IPv6 address. If the
+    ///                  string is anything other than an IPv6 address, `nil`
+    ///                  will be returned instead.
     public init?(_ str: String) {
         var segments: [UInt16] = []
         var zeroRunIndex: Int = -1

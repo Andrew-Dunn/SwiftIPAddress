@@ -695,22 +695,28 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertEqual(cDecodeIPAddress(ipString: ipAddressString)!.s_addr,
                        swiftDecodeIPAddress(ipString: ipAddressString)!.s_addr)
     }
+    
+    // Test that IPv4 addresses only use 4 bytes of memory.
+    func testPhysicalProperties() {
+        XCTAssertEqual(MemoryLayout<IPv4Address>.size, 4)
+    }
 
     static var allTests = [
-        ("testIsUnspecified",     testIsUnspecified),
-        ("testIsLoopback",        testIsLoopback),
-        ("testIsPrivate",         testIsPrivate),
-        ("testIsLinkLocal",       testIsLinkLocal),
-        ("testIsGlobal",          testIsGlobal),
-        ("testIsMulticast",       testIsMulticast),
-        ("testIsBroadcast",       testIsBroadcast),
-        ("testIsDocumentation",   testIsDocumentation),
-        ("testStaticValues",      testStaticValues),
-        ("testValue",             testValue),
-        ("testOctets",            testOctets),
-        ("testStringConversion",  testStringConversion),
-        ("testEqualityOperators", testEqualityOperators),
-        ("testStringConstructor", testStringConstructor),
-        ("testEqualToPton",       testEqualToPton)
+        ("testIsUnspecified",      testIsUnspecified),
+        ("testIsLoopback",         testIsLoopback),
+        ("testIsPrivate",          testIsPrivate),
+        ("testIsLinkLocal",        testIsLinkLocal),
+        ("testIsGlobal",           testIsGlobal),
+        ("testIsMulticast",        testIsMulticast),
+        ("testIsBroadcast",        testIsBroadcast),
+        ("testIsDocumentation",    testIsDocumentation),
+        ("testStaticValues",       testStaticValues),
+        ("testValue",              testValue),
+        ("testOctets",             testOctets),
+        ("testStringConversion",   testStringConversion),
+        ("testEqualityOperators",  testEqualityOperators),
+        ("testStringConstructor",  testStringConstructor),
+        ("testEqualToPton",        testEqualToPton),
+        ("testPhysicalProperties", testPhysicalProperties)
     ]
 }

@@ -398,6 +398,11 @@ class IPv6AddressTests: XCTestCase {
         XCTAssertTrue(cDecodeIPAddress(ipString: ipAddressString)! ==
                       swiftDecodeIPAddress(ipString: ipAddressString)!)
     }
+    
+    // Test that IPv6 addresses only use 16 bytes of memory.
+    func testPhysicalProperties() {
+        XCTAssertEqual(MemoryLayout<IPv6Address>.size, 16)
+    }
 
     static var allTests = [
         ("testIsUnspecified",        testIsUnspecified),
@@ -413,7 +418,8 @@ class IPv6AddressTests: XCTestCase {
         ("testStringConversion",     testStringConversion),
         ("testEqualityOperators",    testEqualityOperators),
         ("testStringConstructor",    testStringConstructor),
-        ("testEqualToPton",          testEqualToPton)
+        ("testEqualToPton",          testEqualToPton),
+        ("testPhysicalProperties",   testPhysicalProperties)
     ]
 }
 
