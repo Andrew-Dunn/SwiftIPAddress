@@ -388,7 +388,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             segment += 1
         }
         
-        var out = [UInt8].init(repeating: 0, count: 45)
+        // Max length is 45 chars for an IPv4-mapped IPv6 address, 1 extra byte for a terminating NUL.
+        var out = [UInt8].init(repeating: 0, count: 46)
         var ptr = 0
         // Special handling for when the first output segment is the longest zero run.
         if (longestZeroRun == 0) && (longestZeroRunLength > 1) {
@@ -436,8 +437,8 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             }
         }
         
-        // return String._fromWellFormedCodeUnitSequence(UTF8.self, input: out.prefix(ptr))
-        return String(decoding: out.prefix(ptr), as: UTF8.self)
+        // Measured to be faster than String(decoding: out.prefix(ptr), as: UTF8.self)
+        return String.init(cString: out)
     }
     
     /// Returns a quad of 32-bit unsigned ints representing the IP address.
