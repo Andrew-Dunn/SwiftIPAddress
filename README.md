@@ -41,7 +41,7 @@ line to your package's dependencies:
 ```swift
 dependencies: [
     .Package(url: "https://github.com/Andrew-Dunn/SwiftIPAddress.git",
-                  "1.0.0"),
+                  "1.0.1"),
 ]
 ```
 
