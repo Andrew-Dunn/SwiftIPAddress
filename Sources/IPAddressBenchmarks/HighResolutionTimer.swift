@@ -59,7 +59,7 @@ class HighResolutionTimer {
             clock_gettime(CLOCK_REALTIME, &now)
         
             var elapsed = timespec(tv_sec: 0, tv_nsec: 0)
-            if end.tv_nsec - epoch.tv_nsec < 0 {
+            if now.tv_nsec - epoch.tv_nsec < 0 {
                 elapsed.tv_sec = now.tv_sec - epoch.tv_sec - 1
                 elapsed.tv_nsec = now.tv_nsec - epoch.tv_nsec + NANOSECONDS_IN_A_SECOND_INT
             } else {
