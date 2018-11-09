@@ -21,6 +21,7 @@
 #endif
 
 fileprivate let NANOSECONDS_IN_A_SECOND = 1_000_000_000.0
+fileprivate let NANOSECONDS_IN_A_SECOND_INT = 1_000_000_000
 
 class HighResolutionTimer {
     #if os(Linux)
@@ -36,7 +37,7 @@ class HighResolutionTimer {
     init() {
         #if os(Linux)
             epoch = timespec()
-            clock_gettime(CLOCK_MONOTONIC, &epoch)
+            clock_gettime(CLOCK_REALTIME, &epoch)
         #else
             epoch = mach_absolute_time()
             mach_timebase_info(&timeBaseInfo)
@@ -46,7 +47,7 @@ class HighResolutionTimer {
     
     func mark() {
         #if os(Linux)
-            clock_gettime(CLOCK_MONOTONIC, &epoch)
+            clock_gettime(CLOCK_REALTIME, &epoch)
         #else
             epoch = mach_absolute_time()
         #endif
@@ -55,9 +56,18 @@ class HighResolutionTimer {
     func check() -> Double {
         #if os(Linux)
             var now = timespec()
-            clock_gettime(CLOCK_MONOTONIC, &now)
-            let delta = Double(now.tv_sec - epoch.tv_sec)
-                        + (Double(now.tv_nsec - epoch.tv_nsec) / NANOSECONDS_IN_A_SECOND)
+            clock_gettime(CLOCK_REALTIME, &now)
+        
+            var elapsed = timespec(tv_sec: 0, tv_nsec: 0)
+            if end.tv_nsec - epoch.tv_nsec < 0 {
+                elapsed.tv_sec = now.tv_sec - epoch.tv_sec - 1
+                elapsed.tv_nsec = now.tv_nsec - epoch.tv_nsec + NANOSECONDS_IN_A_SECOND_INT
+            } else {
+                elapsed.tv_sec = now.tv_sec - epoch.tv_sec
+                elapsed.tv_nsec = now.tv_nsec - epoch.tv_nsec
+            }
+        
+            let delta = Double(elapsed.tv_sec) + (Double(elapsed.tv_nsec) / NANOSECONDS_IN_A_SECOND)
         #else
             let now = mach_absolute_time()
             let delta = (Double(now - epoch) * ticksPerNs) / NANOSECONDS_IN_A_SECOND
