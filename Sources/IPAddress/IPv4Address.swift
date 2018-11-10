@@ -15,6 +15,7 @@
 //
 
 fileprivate let zero = UnicodeScalar("0")!
+fileprivate let zeroValue = zero.value
 fileprivate let nine = UnicodeScalar("9")!
 fileprivate let dot = UnicodeScalar(".")!
 
@@ -132,35 +133,25 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     public init? (_ str: String) {
         var shiftedDistance = UInt32(0)
         var currentValue = UInt32(0)
-        var currentLength = 0
+        var sawDigit = false
         var rawValue = UInt32(0)
         for c in str.unicodeScalars {
             // Handle digits.
             if c >= zero && c <= nine {
-                currentValue *= 10
-                currentLength += 1
-                if (currentLength > 3) {
-                    // Part was too long.
+                if (sawDigit && currentValue == 0) {
                     return nil
                 }
-                currentValue += c.value - zero.value
-            } else if c == dot {
-                if (currentLength == 0) {
-                    // Part had no digits.
-                    return nil
-                }
-                currentLength = 0
+                currentValue = currentValue * 10 + (c.value - zeroValue)
+                sawDigit = true
                 if (currentValue > 255) {
                     // Part was too long.
                     return nil
                 }
+            } else if c == dot && sawDigit {
+                sawDigit = false
                 rawValue |= currentValue << shiftedDistance
                 currentValue = 0
                 shiftedDistance += 8
-                if (shiftedDistance > 24) {
-                    // Encountered too many points.
-                    return nil
-                }
             } else {
                 // Unexpected character.
                 return nil
@@ -170,7 +161,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
             // Not enough parts.
             return nil
         }
-        if (currentLength == 0) {
+        if (!sawDigit) {
             // No final part.
             return nil
         }
