@@ -144,7 +144,12 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
                     if (sawDigit && currentValue == 0) {
                         return false
                     }
-                    currentValue = currentValue * 10 + (c.value - zeroValue)
+                    currentValue += currentValue * 9 + (c.value - zeroValue)
+                    if (currentValue > 255) {
+                        // Part was too long.
+                        return false
+                    }
+                    p!.pointee = UInt8(currentValue)
                     if !sawDigit {
                         sawDigit = true
                         parts += 1
@@ -152,13 +157,8 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
                             return false
                         }
                     }
-                    if (currentValue > 255) {
-                        // Part was too long.
-                        return false
-                    }
                 } else if c == dot && sawDigit {
                     sawDigit = false
-                    p!.pointee = UInt8(currentValue)
                     p = p!.advanced(by: 1)
                     currentValue = 0
                     if (parts == 4) {
@@ -174,7 +174,6 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
                 return false
             }
             
-            p!.pointee = UInt8(currentValue)
             return true
         }
         
