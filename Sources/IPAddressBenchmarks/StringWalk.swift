@@ -16,8 +16,6 @@
 // scripts/generate_harness/generate_harness.py to regenerate this file.
 ////////////////////////////////////////////////////////////////////////////////
 
-import XCTest
-
 //
 // Test String iteration performance over a variety of workloads, languages,
 // and symbols.
@@ -1223,16 +1221,20 @@ public func run_CharIndexing_punctuatedJapanese_unicodeScalars_Backwards(_ N: In
 }
 
 
-class StringWalkTests: XCTestCase {
+public class StringWalkBenchmarks {
     /// Test unspecified address detection.
-    func testRunStringWalk() {
+    public func runStringWalkBenchmarks() {
+        let timer = HighResolutionTimer()
         for benchmark in StringWalk {
             if (benchmark.shouldRun) {
                 if (benchmark.setUpFunction != nil) {
                     benchmark.setUpFunction!()
                 }
                 if (benchmark.runFunction != nil) {
-                    benchmark.runFunction!(1)
+                    timer.mark()
+                    benchmark.runFunction!(100)
+                    let result = timer.check()
+                    print("\(benchmark.name): \(100.0/result) ops/second.")
                 }
                 if (benchmark.tearDownFunction != nil) {
                     benchmark.tearDownFunction!()

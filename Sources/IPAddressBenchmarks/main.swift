@@ -150,3 +150,6 @@ for ip in ipv6Addresses {
 }
 elapsedSeconds = timer.check()
 print("inet_ntop (Swift),\( doubleCount / elapsedSeconds)")
+
+let stringWalkBenchmarks = StringWalkBenchmarks()
+stringWalkBenchmarks.runStringWalkBenchmarks()

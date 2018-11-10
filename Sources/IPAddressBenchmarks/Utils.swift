@@ -23,11 +23,7 @@ import IPAddress
 
 class Utils {
     static func randomByte() -> UInt8 {
-        #if os(Linux)
-            return UInt8(rand() & 0xFF)
-        #else
-            return UInt8(arc4random_uniform(255))
-        #endif
+        return UInt8.random(in: UInt8.min...UInt8.max)
     }
     
     static func randomIPv4String() -> String {
@@ -39,33 +35,18 @@ class Utils {
     }
     
     static func randomIPv4() -> IPv4Address {
-        #if os(Linux)
-            return IPv4Address(fromUInt32: UInt32(rand()))
-        #else
-            return IPv4Address(fromUInt32: arc4random_uniform(UInt32.max))
-        #endif
+        return IPv4Address(fromUInt32: UInt32.random(in: UInt32.min...UInt32.max))
     }
     
     static func randomIPv6() -> IPv6Address {
-        #if os(Linux)
-            let a: UInt32 = UInt32(bitPattern: rand())
-            let b: UInt32 = UInt32(bitPattern: rand())
-            let c: UInt32 = UInt32(bitPattern: rand())
-            let d: UInt32 = UInt32(bitPattern: rand())
-            return IPv6Address(parts: UInt16((a & 0xFFFF) >> 16), UInt16(a & 0xFFFF),
-                                      UInt16((b & 0xFFFF) >> 16), UInt16(b & 0xFFFF),
-                                      UInt16((c & 0xFFFF) >> 16), UInt16(c & 0xFFFF),
-                                      UInt16((d & 0xFFFF) >> 16), UInt16(d & 0xFFFF))
-        #else
-            return IPv6Address(parts: UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))),
-                                      UInt16(arc4random_uniform(UInt32(UInt16.max))))
-        #endif
+        return IPv6Address.init(parts: UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max),
+                                       UInt16.random(in: UInt16.min...UInt16.max))
     }
     
     static func randomIPv4Strings(count: Int) -> [String] {
