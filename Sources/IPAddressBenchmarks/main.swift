@@ -34,12 +34,12 @@ timer.mark()
 for ipString in ipv4AddressStrings {
     let result = Utils.swiftDecodeIPv4Address(ipString: ipString)
     if result == nil {
-        print("SwiftIPAddress,ERROR")
+        print("SwiftIPAddress,   ERROR")
         exit(1)
     }
 }
 var elapsedSeconds = timer.check()
-print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
+print("SwiftIPAddress,   \( doubleCount / elapsedSeconds)")
 
 timer.mark()
 for ipString in ipv4AddressStrings {
@@ -71,12 +71,12 @@ timer.mark()
 for ip in ipv4Addresses {
     let result = ip.description
     if result.isEmpty {
-        print("SwiftIPAddress,ERROR")
+        print("SwiftIPAddress,   ERROR")
         exit(1)
     }
 }
 elapsedSeconds = timer.check()
-print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
+print("SwiftIPAddress,   \( doubleCount / elapsedSeconds)")
 
 timer.mark()
 for ip in ipv4Addresses {
@@ -107,12 +107,12 @@ timer.mark()
 for ipString in ipv6AddressStrings {
     let result = Utils.swiftDecodeIPv6Address(ipString: ipString)
     if result == nil {
-        print("SwiftIPAddress,ERROR")
+        print("SwiftIPAddress,   ERROR")
         exit(1)
     }
 }
 elapsedSeconds = timer.check()
-print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
+print("SwiftIPAddress,   \( doubleCount / elapsedSeconds)")
 
 timer.mark()
 for ipString in ipv6AddressStrings {
@@ -133,12 +133,12 @@ timer.mark()
 for ip in ipv6Addresses {
     let result = ip.description
     if result.isEmpty {
-        print("SwiftIPAddress,ERROR")
+        print("SwiftIPAddress,   ERROR")
         exit(1)
     }
 }
 elapsedSeconds = timer.check()
-print("SwiftIPAddress,\( doubleCount / elapsedSeconds)")
+print("SwiftIPAddress,   \( doubleCount / elapsedSeconds)")
 
 timer.mark()
 for ip in ipv6Addresses {
@@ -150,6 +150,3 @@ for ip in ipv6Addresses {
 }
 elapsedSeconds = timer.check()
 print("inet_ntop (Swift),\( doubleCount / elapsedSeconds)")
-
-let stringWalkBenchmarks = StringWalkBenchmarks()
-stringWalkBenchmarks.runStringWalkBenchmarks()
