@@ -131,45 +131,57 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     ///                  string is anything other than an IPv4 address, `nil`
     ///                  will be returned instead.
     public init? (_ str: String) {
-        var shiftedDistance = UInt32(0)
-        var currentValue = UInt32(0)
-        var sawDigit = false
         var rawValue = UInt32(0)
-        for c in str.unicodeScalars {
-            // Handle digits.
-            if c >= zero && c <= nine {
-                if (sawDigit && currentValue == 0) {
-                    return nil
+        
+        let success = withUnsafeMutableBytes(of: &rawValue) { bytes -> Bool in
+            var currentValue = UInt32(0)
+            var sawDigit = false
+            var p = bytes.baseAddress?.assumingMemoryBound(to: UInt8.self)
+            var parts = 0
+            for c in str.unicodeScalars {
+                // Handle digits.
+                if c >= zero && c <= nine {
+                    if (sawDigit && currentValue == 0) {
+                        return false
+                    }
+                    currentValue = currentValue * 10 + (c.value - zeroValue)
+                    if !sawDigit {
+                        sawDigit = true
+                        parts += 1
+                        if (parts > 4) {
+                            return false
+                        }
+                    }
+                    if (currentValue > 255) {
+                        // Part was too long.
+                        return false
+                    }
+                } else if c == dot && sawDigit {
+                    sawDigit = false
+                    p!.pointee = UInt8(currentValue)
+                    p = p!.advanced(by: 1)
+                    currentValue = 0
+                    if (parts == 4) {
+                        return false
+                    }
+                } else {
+                    // Unexpected character.
+                    return false
                 }
-                currentValue = currentValue * 10 + (c.value - zeroValue)
-                sawDigit = true
-                if (currentValue > 255) {
-                    // Part was too long.
-                    return nil
-                }
-            } else if c == dot && sawDigit {
-                sawDigit = false
-                rawValue |= currentValue << shiftedDistance
-                currentValue = 0
-                shiftedDistance += 8
-            } else {
-                // Unexpected character.
-                return nil
             }
+            
+            if parts < 4 {
+                return false
+            }
+            
+            p!.pointee = UInt8(currentValue)
+            return true
         }
-        if (shiftedDistance != 24) {
-            // Not enough parts.
+        
+        if (!success) {
             return nil
         }
-        if (!sawDigit) {
-            // No final part.
-            return nil
-        }
-        if (currentValue > 255) {
-            // Part was too long.
-            return nil
-        }
-        rawValue |= currentValue << 24
+        
         value = rawValue
     }
     
