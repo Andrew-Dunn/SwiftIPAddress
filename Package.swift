@@ -1,3 +1,5 @@
+// swift-tools-version:4.0
+
 //
 // Copyright © Andrew Dunn, 2017
 //
@@ -18,15 +20,13 @@ import PackageDescription
 
 let package = Package(
     name: "IPAddress",
-    targets: [
-        Target(
-            name: "IPAddressBenchmarks",
-            dependencies: [
-                "IPAddress"
-            ]),
-        Target(
-            name: "IPAddress"
-        ),
+    products: [
+        .library(name: "IPAddress", targets: ["IPAddress"])
     ],
-    dependencies: []
+    dependencies: [
+    ],
+    targets: [
+        .target(name: "IPAddress", dependencies: []),
+        .target(name: "IPAddressBenchmarks", dependencies: ["IPAddress"])
+    ]
 )
