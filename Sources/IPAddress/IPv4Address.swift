@@ -317,7 +317,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
 /// Extracts an integer representation of the given IPv4 address in network-byte
 /// order.
 public extension UInt32 {
-    public init (fromIPv4Address ip: IPv4Address) {
+    init (fromIPv4Address ip: IPv4Address) {
         self = ip.value
     }
 }
