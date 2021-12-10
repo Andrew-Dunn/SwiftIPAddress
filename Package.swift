@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.3
 
 //
 // Copyright © Andrew Dunn, 2017
@@ -27,6 +27,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "IPAddress", dependencies: []),
-        .executableTarget(name: "IPAddressBenchmarks", dependencies: ["IPAddress"])
+        .target(name: "IPAddressBenchmarks", dependencies: ["IPAddress"])
     ]
 )
