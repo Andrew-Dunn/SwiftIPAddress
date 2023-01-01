@@ -19,6 +19,12 @@ import PackageDescription
 
 let package = Package(
     name: "IPAddress",
+    products: [
+        // Products define the executables and libraries a package produces, and make them visible to other packages.
+        .library(
+            name: "IPAddress",
+            targets: ["IPAddress"]),
+    ],
     dependencies: [],
     targets: [
         .target(
