@@ -1,3 +1,4 @@
+// swift-tools-version: 5.5
 //
 // Copyright © Andrew Dunn, 2017
 //
@@ -18,15 +19,28 @@ import PackageDescription
 
 let package = Package(
     name: "IPAddress",
+    products: [
+        // Products define the executables and libraries a package produces, and make them visible to other packages.
+        .library(
+            name: "IPAddress",
+            targets: ["IPAddress"]),
+    ],
+    dependencies: [],
     targets: [
-        Target(
-            name: "IPAddressBenchmarks",
-            dependencies: [
-                "IPAddress"
-            ]),
-        Target(
+        .target(
             name: "IPAddress"
         ),
-    ],
-    dependencies: []
+        .executableTarget(
+            name: "IPAddressBenchmarks",
+            dependencies: [
+                .target(name: "IPAddress")
+            ]
+        ),
+        .testTarget(
+            name: "IPAddressTests",
+            dependencies: [
+                .target(name: "IPAddress")
+            ]
+        )
+    ]
 )

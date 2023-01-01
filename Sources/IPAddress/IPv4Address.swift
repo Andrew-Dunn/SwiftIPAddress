@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 
-fileprivate let zero = UnicodeScalar("0")!
-fileprivate let nine = UnicodeScalar("9")!
-fileprivate let dot = UnicodeScalar(".")!
+fileprivate let zero = UnicodeScalar("0")
+fileprivate let nine = UnicodeScalar("9")
+fileprivate let dot = UnicodeScalar(".")
 
 // Use lookup tables to massively improve the performance of converting IP addresses to strings.
 fileprivate let firstQuad = [  "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
@@ -317,7 +317,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
 /// Extracts an integer representation of the given IPv4 address in network-byte
 /// order.
 public extension UInt32 {
-    public init (fromIPv4Address ip: IPv4Address) {
+    init (fromIPv4Address ip: IPv4Address) {
         self = ip.value
     }
 }
