@@ -129,6 +129,55 @@ class IPv6AddressTests: XCTestCase {
                                          0xffff, 0xffff, 0xffff, 0xffff).isDocumentation)
     }
     
+    /// Test for CIDR range inclusion.
+    func testIncludedIn() {
+        let address = IPv6Address(parts: 0x2001, 0x0db8, 0, 0, 0, 0, 0, 1)
+        // Prefix entirely within `high` — /32.
+        XCTAssertTrue(address.isIncluded(in:"2001:db8::/32"))
+        XCTAssertFalse(address.isIncluded(in:"2002::/32"))
+        // Wider prefixes.
+        XCTAssertTrue(address.isIncluded(in:"2001::/16"))
+        // Non-octet prefix length within `high` — /36.
+        XCTAssertTrue(address.isIncluded(in:"2001:db8::/36"))
+        XCTAssertFalse(address.isIncluded(in:"2001:db8:1000::/36"))
+        // Prefix spanning `high` and `low` — /80.
+        XCTAssertTrue(address.isIncluded(in:"2001:db8::/80"))
+        XCTAssertFalse(IPv6Address(parts: 0x2001, 0x0db8, 0, 0, 1, 0, 0, 0).isIncluded(in:"2001:db8::/80"))
+        // Exact match (/128).
+        XCTAssertTrue(address.isIncluded(in:"2001:db8::1/128"))
+        XCTAssertFalse(address.isIncluded(in:"2001:db8::2/128"))
+        // Match-all (/0).
+        XCTAssertTrue(address.isIncluded(in:"::/0"))
+        // Invalid input.
+        XCTAssertFalse(address.isIncluded(in:"invalid range"))
+        XCTAssertFalse(address.isIncluded(in:"2001:db8::/129"))
+    }
+
+    /// Test IPv6CIDR construction and reuse.
+    func testIPv6CIDR() {
+        // Valid initialisers.
+        XCTAssertNotNil(IPv6CIDR("2001:db8::/32"))
+        XCTAssertNotNil(IPv6CIDR(network: IPv6Address(parts: 0x2001, 0x0db8, 0, 0, 0, 0, 0, 0), prefix: 32))
+        // Invalid initialisers.
+        XCTAssertNil(IPv6CIDR("2001:db8::/129"))
+        XCTAssertNil(IPv6CIDR("not a cidr"))
+        // Host bits in the network address are ignored.
+        let cidrFromString = IPv6CIDR("2001:db8::1/32")!
+        let cidrFromParts  = IPv6CIDR(network: IPv6Address(parts: 0x2001, 0x0db8, 0, 0, 0, 0, 0, 1), prefix: 32)!
+        XCTAssertEqual(cidrFromString, cidrFromParts)
+        // Typed overload produces identical results to the string overload.
+        let cidr32 = IPv6CIDR("2001:db8::/32")!
+        let address = IPv6Address(parts: 0x2001, 0x0db8, 0, 0, 0, 0, 0, 1)
+        XCTAssertTrue(address.isIncluded(in:cidr32))
+        XCTAssertFalse(IPv6Address(parts: 0x2002, 0, 0, 0, 0, 0, 0, 0).isIncluded(in:cidr32))
+        // /0 matches everything; /128 is exact.
+        let all   = IPv6CIDR(network: IPv6Address(parts: 0, 0, 0, 0, 0, 0, 0, 0), prefix: 0)!
+        let exact = IPv6CIDR(network: address, prefix: 128)!
+        XCTAssertTrue(address.isIncluded(in:all))
+        XCTAssertTrue(address.isIncluded(in:exact))
+        XCTAssertFalse(IPv6Address(parts: 0, 0, 0, 0, 0, 0, 0, 0).isIncluded(in:exact))
+    }
+
     /// Test that predefined addresses are correct.
     func testStaticValues() {
         XCTAssertTrue(IPv6Address.any.isUnspecified)

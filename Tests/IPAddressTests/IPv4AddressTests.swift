@@ -443,7 +443,6 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertFalse(address.isDocumentation)
         address = IPv4Address(parts: 192,0,2,0)
         XCTAssertTrue(address.isDocumentation)
-        
         // TEST-NET-2.
         //
         // 198.51.100.0/24
@@ -461,7 +460,6 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertFalse(address.isDocumentation)
         address = IPv4Address(parts: 198,51,100,0)
         XCTAssertTrue(address.isDocumentation)
-        
         // TEST-NET-3.
         //
         // 203.0.113.0/24
@@ -480,6 +478,50 @@ class IPv4AddressTests: XCTestCase {
         address = IPv4Address(parts: 203,0,113,0)
         XCTAssertTrue(address.isDocumentation)
     }
+
+    /// Test for CIDR range inclusion.
+    func testIncludedIn() {
+        let address = IPv4Address(parts: 171,245,48,40)
+        // Non-octet prefix length (/20).
+        XCTAssertTrue(address.isIncluded(in:"171.245.48.0/20"))
+        XCTAssertFalse(address.isIncluded(in:"171.245.64.0/20"))
+        // Exact match (/32).
+        XCTAssertFalse(address.isIncluded(in:"171.245.48.0/32"))
+        XCTAssertTrue(address.isIncluded(in:"171.245.48.40/32"))
+        // Wider ranges.
+        XCTAssertTrue(address.isIncluded(in:"171.245.0.0/16"))
+        XCTAssertTrue(address.isIncluded(in:"171.0.0.0/8"))
+        // Match-all range (/0).
+        XCTAssertTrue(address.isIncluded(in:"0.0.0.0/0"))
+        // Invalid input.
+        XCTAssertFalse(address.isIncluded(in:"invalid range"))
+        XCTAssertFalse(address.isIncluded(in:"171.245.48.0/33"))
+    }
+
+    /// Test IPv4CIDR construction and reuse.
+    func testIPv4CIDR() {
+        // Valid initialisers.
+        XCTAssertNotNil(IPv4CIDR("192.168.0.0/16"))
+        XCTAssertNotNil(IPv4CIDR(network: IPv4Address(parts: 192,168,0,0), prefix: 16))
+        // Invalid initialisers.
+        XCTAssertNil(IPv4CIDR("192.168.0.0/33"))
+        XCTAssertNil(IPv4CIDR("not a cidr"))
+        // Host bits in the network address are ignored.
+        let cidrFromString = IPv4CIDR("192.168.1.0/16")!
+        let cidrFromParts  = IPv4CIDR(network: IPv4Address(parts: 192,168,1,0), prefix: 16)!
+        XCTAssertEqual(cidrFromString, cidrFromParts)
+        // Typed overload produces identical results to the string overload.
+        let cidr20 = IPv4CIDR("171.245.48.0/20")!
+        let address = IPv4Address(parts: 171,245,48,40)
+        XCTAssertTrue(address.isIncluded(in:cidr20))
+        XCTAssertFalse(IPv4Address(parts: 171,245,64,0).isIncluded(in:cidr20))
+        // /0 matches everything; /32 is exact.
+        let all  = IPv4CIDR(network: IPv4Address(parts: 0,0,0,0), prefix: 0)!
+        let exact = IPv4CIDR(network: address, prefix: 32)!
+        XCTAssertTrue(address.isIncluded(in:all))
+        XCTAssertTrue(address.isIncluded(in:exact))
+        XCTAssertFalse(IPv4Address(parts: 0,0,0,0).isIncluded(in:exact))
+    }
     
     /// Test that predefined addresses are correct.
     func testStaticValues() {
@@ -495,31 +537,31 @@ class IPv4AddressTests: XCTestCase {
     func testValue() {
         var address: IPv4Address
         address = IPv4Address()
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
+        XCTAssertEqual(UInt32(address), 0x00000000)
         address = IPv4Address(parts: 0,0,0,0)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
-        address = IPv4Address(fromOctets: [0,0,0,0])
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
-        address = IPv4Address(fromUInt32: 0x00000000)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
+        XCTAssertEqual(UInt32(address), 0x00000000)
+        address = IPv4Address([0,0,0,0])
+        XCTAssertEqual(UInt32(address), 0x00000000)
+        address = IPv4Address(0x00000000)
+        XCTAssertEqual(UInt32(address), 0x00000000)
         address = IPv4Address(parts: 255,255,255,255)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xFFFFFFFF)
-        address = IPv4Address(fromOctets: [255,255,255,255])
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xFFFFFFFF)
-        address = IPv4Address(fromUInt32: 0xFFFFFFFF)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xFFFFFFFF)
+        XCTAssertEqual(UInt32(address), 0xFFFFFFFF)
+        address = IPv4Address([255,255,255,255])
+        XCTAssertEqual(UInt32(address), 0xFFFFFFFF)
+        address = IPv4Address(0xFFFFFFFF)
+        XCTAssertEqual(UInt32(address), 0xFFFFFFFF)
         address = IPv4Address(parts: 178,152,71,53)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x354798B2)
-        address = IPv4Address(fromOctets: [178,152,71,53])
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x354798B2)
-        address = IPv4Address(fromUInt32: 0x354798B2)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x354798B2)
+        XCTAssertEqual(UInt32(address), 0x354798B2)
+        address = IPv4Address([178,152,71,53])
+        XCTAssertEqual(UInt32(address), 0x354798B2)
+        address = IPv4Address(0x354798B2)
+        XCTAssertEqual(UInt32(address), 0x354798B2)
         address = IPv4Address(parts: 61,105,180,185)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xB9B4693D)
-        address = IPv4Address(fromOctets: [61,105,180,185])
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xB9B4693D)
-        address = IPv4Address(fromUInt32: 0xB9B4693D)
-        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xB9B4693D)
+        XCTAssertEqual(UInt32(address), 0xB9B4693D)
+        address = IPv4Address([61,105,180,185])
+        XCTAssertEqual(UInt32(address), 0xB9B4693D)
+        address = IPv4Address(0xB9B4693D)
+        XCTAssertEqual(UInt32(address), 0xB9B4693D)
     }
     
     /// Test that the octet array extraction works as expected.
@@ -597,7 +639,7 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertTrue(address1 != address2)
         XCTAssertNotEqual(address1, address2)
         address1 = IPv4Address(parts: 61,105,180,185)
-        address2 = IPv4Address(fromOctets: [61,105,180,185])
+        address2 = IPv4Address([61,105,180,185])
         XCTAssertTrue(address1 == address2)
         XCTAssertFalse(address1 != address2)
         XCTAssertEqual(address1, address2)
@@ -674,7 +716,7 @@ class IPv4AddressTests: XCTestCase {
             }
             return in_addr(
                 s_addr: in_addr_t(
-                    integerLiteral: UInt32(fromIPv4Address: result!)))
+                    integerLiteral: UInt32(result!)))
         }
         
         var ipAddressString = "61.105.180.185"
