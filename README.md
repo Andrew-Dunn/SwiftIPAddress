@@ -1,52 +1,46 @@
 # SwiftIPAddress
 
-SwiftIPAddress is a library for parsing and presenting IP addresses using Apple's Swift
-programming language. Not only does it present an idiomatic API that would feel familiar 
-to developers, it is blazing fast, outperforming the Operating System standard libraries,
-and it is also extremely well tested.
+A small Swift library for parsing and formatting IPv4 and IPv6 addresses. It
+aims to offer a familiar, idiomatic API with good performance on both Apple
+and Linux Swift toolchains.
 
-## Design Goals
+## Design goals
 
-There goals that guide this package's development are as follows:
+### Pure Swift
 
-### The main types must be implemented in pure Swift code.
+The core types are implemented in pure Swift rather than wrapping
+`inet_ntop` / `inet_pton`. This gives the compiler more room to inline hot
+paths and keeps the library portable across every platform Swift supports.
 
-This project is implemented in pure Swift both as an academic exercise, as well as a
-constraint. It would be very easy to wrap the `inet_ntop` and `inet_pton` methods, however
-that would have both limited the compiler's ability to inline code, as well as prevented
-interoperability with future targets available to Swift.
+### Compact representation
 
-### The main types must use no more memory than required to represent their values.
+Address values are stored in their minimum natural width: `IPv4Address`
+holds four bytes and `IPv6Address` holds sixteen. Both are `struct` value
+types with no heap allocation, which keeps per-address overhead predictable
+in memory-sensitive environments.
 
-In an age where memory is the most constricting resource in cloud deployments, it was
-extremely important to me to use no more memory than absolutely necessary for the
-internal representations. `IPv4Address` is represented internally with 4 bytes, and
-`IPv6Address` uses 16-bytes. They are also both value types, avoiding the need for any
-memory management.
+### Good performance
 
-### The library must be goddamn fast.
-
-This library currently exceeds the performance of the Operating System libraries quite
-handily when called from Swift. This is owing to the pure Swift implementation,
-eliminating the need to convert to and from C-friendly data structures, as well as the
-possibility for more aggressive inlining. This library proves that Swift code can be very
-performant, even outperforming the native C functions.
+Parsing and formatting are designed to avoid per-call allocation and to
+lean on simple bit-twiddling rather than format-string plumbing. In our
+benchmarks the pure-Swift implementation is competitive with — and often
+faster than — the libc helpers called from Swift, largely because it
+skips the Swift/C marshalling that wrapping `inet_ntop` / `inet_pton`
+would require. Your mileage will vary; the benchmark target
+(`IPAddressBenchmarks`) is included if you want to measure for yourself.
 
 ## Installation
 
-SwiftIPAddress is installed using the Swift Package Manager. It is compatible with
-projects using Swift 3.0 and later. To use it in your project, simply add the following
-line to your package's dependencies:
+Add the package as a Swift Package Manager dependency:
 
 ```swift
 dependencies: [
-    .Package(url: "https://github.com/Andrew-Dunn/SwiftIPAddress.git",
-                  "1.0.1"),
+    .package(url: "https://github.com/Andrew-Dunn/SwiftIPAddress.git",
+             from: "1.0.1"),
 ]
 ```
 
-It may then be used directly by importing the `IPAddress` package at the start of your
-sources files.
+Then `import IPAddress` wherever you need it:
 
 ```swift
 import IPAddress
@@ -58,11 +52,32 @@ let ip = IPv6Address("2b88:b6::14")
 
 ### `IPv4Address`
 
-The `IPv4Address` type is an immutable data structure that represents an IPv4 address.
+An immutable, four-byte value representing an IPv4 address. Supports
+parsing from a dotted-quad string, construction from octets or a
+`UInt32`, and predicates for the common classifications (`isLoopback`,
+`isPrivate`, `isLinkLocal`, `isMulticast`, `isBroadcast`,
+`isDocumentation`, `isGlobal`).
 
 ### `IPv6Address`
 
-The `IPv6Address` type is an immutable data structure that represents an IPv6 address.
+An immutable, sixteen-byte value representing an IPv6 address. Supports
+the full RFC 5952 textual forms (including `::` compression and the
+IPv4-mapped `::ffff:X.X.X.X` shorthand) and the corresponding
+classification predicates.
+
+### CIDR membership
+
+`IPv4CIDR` and `IPv6CIDR` represent a network/prefix pair. Construction
+pre-computes the masked network and mask, so `address.isIncluded(in:)`
+is a single bitwise compare with no string work on the hot path:
+
+```swift
+let cidr = IPv4CIDR("10.0.0.0/8")!
+IPv4Address("10.1.2.3")!.isIncluded(in: cidr)  // true
+```
+
+There is also a convenience overload that takes a CIDR string directly,
+which is handy for one-shot checks but does the parse on every call.
 
 ## License
 
@@ -70,7 +85,8 @@ Copyright © Andrew Dunn, 2017
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-You may obtain a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0
+You may obtain a copy of the License at:
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
