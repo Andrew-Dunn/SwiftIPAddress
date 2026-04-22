@@ -240,7 +240,7 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertFalse(address.isGlobal)
         // 192.168.0.0/16
         address = IPv4Address(parts: 192,0,0,0)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 192,167,0,0)
         XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 192,169,0,0)
@@ -252,7 +252,7 @@ class IPv4AddressTests: XCTestCase {
         address = IPv4Address(parts: 192,255,0,0)
         XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 255,168,0,0)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 192,168,0,0)
         XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 192,168,0,1)
@@ -292,7 +292,7 @@ class IPv4AddressTests: XCTestCase {
         address = IPv4Address(parts: 170,254,0,0)
         XCTAssertTrue(address.isGlobal)
         address = IPv4Address(parts: 255,254,0,0)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 169,254,0,0)
         XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 169,254,0,1)
@@ -304,24 +304,25 @@ class IPv4AddressTests: XCTestCase {
         address = IPv4Address(parts: 169,254,255,255)
         XCTAssertFalse(address.isGlobal)
         
-        // Test that the broadcast address is not globally routable.
+        // Test that the broadcast address and surrounding reserved /
+        // zero-network blocks are not globally routable.
         //
         address = IPv4Address(parts: 0,0,0,255)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 0,0,255,0)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 0,255,0,0)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 255,0,0,0)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 255,255,255,254)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 255,255,254,255)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 255,254,255,255)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 254,255,255,255)
-        XCTAssertTrue(address.isGlobal)
+        XCTAssertFalse(address.isGlobal)
         address = IPv4Address(parts: 255,255,255,255)
         XCTAssertFalse(address.isGlobal)
         
@@ -375,10 +376,7 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertFalse(address.isGlobal)
     }
 
-    /// `isGlobal` is documented as "globally-routable" — the obvious primitive
-    /// for SSRF egress filtering — but its negation list omits several RFC 6890
-    /// non-globally-routable ranges. Each assertion below should return false
-    /// once the bug is fixed.
+    /// Extra coverage for RFC 6890 ranges not exercised by `testIsGlobal`.
     func testIsGlobalNonRoutableRanges() {
         // 224.0.0.0/4 multicast. SSDP / mDNS / all-hosts are LAN-only.
         XCTAssertFalse(IPv4Address(parts: 239, 255, 255, 250).isGlobal)
@@ -398,6 +396,9 @@ class IPv4AddressTests: XCTestCase {
         XCTAssertFalse(IPv4Address(parts: 198, 19, 255, 254).isGlobal)
         // 192.0.0.0/24 IETF protocol assignments.
         XCTAssertFalse(IPv4Address(parts: 192, 0, 0, 1).isGlobal)
+        // Sanity: genuinely public addresses remain globally routable.
+        XCTAssertTrue(IPv4Address(parts: 8, 8, 8, 8).isGlobal)
+        XCTAssertTrue(IPv4Address(parts: 1, 1, 1, 1).isGlobal)
     }
 
     /// Test for multicast address detection.
