@@ -374,7 +374,32 @@ class IPv4AddressTests: XCTestCase {
         address = IPv4Address(parts: 203,0,113,0)
         XCTAssertFalse(address.isGlobal)
     }
-    
+
+    /// `isGlobal` is documented as "globally-routable" — the obvious primitive
+    /// for SSRF egress filtering — but its negation list omits several RFC 6890
+    /// non-globally-routable ranges. Each assertion below should return false
+    /// once the bug is fixed.
+    func testIsGlobalNonRoutableRanges() {
+        // 224.0.0.0/4 multicast. SSDP / mDNS / all-hosts are LAN-only.
+        XCTAssertFalse(IPv4Address(parts: 239, 255, 255, 250).isGlobal)
+        XCTAssertFalse(IPv4Address(parts: 224, 0, 0, 251).isGlobal)
+        XCTAssertFalse(IPv4Address(parts: 224, 0, 0, 1).isGlobal)
+        // 100.64.0.0/10 — carrier-grade NAT.
+        XCTAssertFalse(IPv4Address(parts: 100, 64, 0, 1).isGlobal)
+        XCTAssertFalse(IPv4Address(parts: 100, 127, 255, 254).isGlobal)
+        // 240.0.0.0/4 reserved (RFC 1112).
+        XCTAssertFalse(IPv4Address(parts: 240, 0, 0, 1).isGlobal)
+        XCTAssertFalse(IPv4Address(parts: 250, 100, 50, 25).isGlobal)
+        // 0.0.0.0/8 "this network" (RFC 1122).
+        XCTAssertFalse(IPv4Address(parts: 0, 1, 2, 3).isGlobal)
+        XCTAssertFalse(IPv4Address(parts: 0, 255, 255, 254).isGlobal)
+        // 198.18.0.0/15 benchmarking (RFC 2544).
+        XCTAssertFalse(IPv4Address(parts: 198, 18, 0, 1).isGlobal)
+        XCTAssertFalse(IPv4Address(parts: 198, 19, 255, 254).isGlobal)
+        // 192.0.0.0/24 IETF protocol assignments.
+        XCTAssertFalse(IPv4Address(parts: 192, 0, 0, 1).isGlobal)
+    }
+
     /// Test for multicast address detection.
     func testIsMulticast() {
         var address = IPv4Address(parts: 223,0,0,0)
@@ -537,33 +562,54 @@ class IPv4AddressTests: XCTestCase {
     func testValue() {
         var address: IPv4Address
         address = IPv4Address()
-        XCTAssertEqual(UInt32(address), 0x00000000)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
         address = IPv4Address(parts: 0,0,0,0)
-        XCTAssertEqual(UInt32(address), 0x00000000)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
+        address = IPv4Address(fromOctets: [0,0,0,0])
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
+        address = IPv4Address(fromUInt32: 0x00000000)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x00000000)
+        address = IPv4Address(parts: 255,255,255,255)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xFFFFFFFF)
+        address = IPv4Address(fromOctets: [255,255,255,255])
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xFFFFFFFF)
+        address = IPv4Address(fromUInt32: 0xFFFFFFFF)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xFFFFFFFF)
+        address = IPv4Address(parts: 178,152,71,53)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x354798B2)
+        address = IPv4Address(fromOctets: [178,152,71,53])
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x354798B2)
+        address = IPv4Address(fromUInt32: 0x354798B2)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0x354798B2)
+        address = IPv4Address(parts: 61,105,180,185)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xB9B4693D)
+        address = IPv4Address(fromOctets: [61,105,180,185])
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xB9B4693D)
+        address = IPv4Address(fromUInt32: 0xB9B4693D)
+        XCTAssertEqual(UInt32(fromIPv4Address: address), 0xB9B4693D)
+    }
+
+    /// Mirrors `testValue` but exercises the unlabeled `init(_:)` overloads.
+    func testValueUnlabeledInits() {
+        var address: IPv4Address
         address = IPv4Address([0,0,0,0])
         XCTAssertEqual(UInt32(address), 0x00000000)
         address = IPv4Address(0x00000000)
         XCTAssertEqual(UInt32(address), 0x00000000)
-        address = IPv4Address(parts: 255,255,255,255)
-        XCTAssertEqual(UInt32(address), 0xFFFFFFFF)
         address = IPv4Address([255,255,255,255])
         XCTAssertEqual(UInt32(address), 0xFFFFFFFF)
         address = IPv4Address(0xFFFFFFFF)
         XCTAssertEqual(UInt32(address), 0xFFFFFFFF)
-        address = IPv4Address(parts: 178,152,71,53)
-        XCTAssertEqual(UInt32(address), 0x354798B2)
         address = IPv4Address([178,152,71,53])
         XCTAssertEqual(UInt32(address), 0x354798B2)
         address = IPv4Address(0x354798B2)
         XCTAssertEqual(UInt32(address), 0x354798B2)
-        address = IPv4Address(parts: 61,105,180,185)
-        XCTAssertEqual(UInt32(address), 0xB9B4693D)
         address = IPv4Address([61,105,180,185])
         XCTAssertEqual(UInt32(address), 0xB9B4693D)
         address = IPv4Address(0xB9B4693D)
         XCTAssertEqual(UInt32(address), 0xB9B4693D)
     }
-    
+
     /// Test that the octet array extraction works as expected.
     func testOctets() {
         var address: IPv4Address
@@ -749,11 +795,13 @@ class IPv4AddressTests: XCTestCase {
         ("testIsPrivate",          testIsPrivate),
         ("testIsLinkLocal",        testIsLinkLocal),
         ("testIsGlobal",           testIsGlobal),
+        ("testIsGlobalNonRoutableRanges", testIsGlobalNonRoutableRanges),
         ("testIsMulticast",        testIsMulticast),
         ("testIsBroadcast",        testIsBroadcast),
         ("testIsDocumentation",    testIsDocumentation),
         ("testStaticValues",       testStaticValues),
         ("testValue",              testValue),
+        ("testValueUnlabeledInits", testValueUnlabeledInits),
         ("testOctets",             testOctets),
         ("testStringConversion",   testStringConversion),
         ("testEqualityOperators",  testEqualityOperators),

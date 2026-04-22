@@ -143,10 +143,10 @@ public struct IPv6Address: LosslessStringConvertible, Hashable {
                 // The first part of the quad needs to be re-calculated, as it was originally parsed as hex.
                 if !parsingQuad {
                     var newV: UInt16 = 0
-                    if currentValue > 0x100 {
+                    if currentValue >= 0x100 {
                         newV += ((currentValue & 0xF00) >> 8) * 100
                     }
-                    if currentValue > 0x10 {
+                    if currentValue >= 0x10 {
                         newV += ((currentValue & 0xF0) >> 4) * 10
                     }
                     newV += currentValue & 0xF
@@ -198,7 +198,7 @@ public struct IPv6Address: LosslessStringConvertible, Hashable {
                 currentValue = 0
                 currentLength = 0
             } else {
-                break
+                return nil
             }
         }
         if (parsingQuad) {
@@ -267,35 +267,58 @@ public struct IPv6Address: LosslessStringConvertible, Hashable {
         low = lo
     }
     
+    /// If this address is the IPv4-mapped form **(::ffff:X.X.X.X)**, returns the
+    /// embedded IPv4 address; otherwise `nil`. Used by the classification
+    /// predicates so that a dual-stack socket's eventual destination is
+    /// considered when deciding whether an address is loopback, private, etc.
+    private var ipv4Mapped: IPv4Address? {
+        guard high == 0 && (low & 0x0000_0000_FFFF_FFFF) == 0x0000_0000_FFFF_0000
+            else { return nil }
+        return IPv4Address(UInt32(low >> 32))
+    }
+
     /// Returns `true` if the IP address is an unspecified, if you listen on
     /// this address, your socket will listen on all addresses available.
     ///
-    /// - Note: Equivalent to checking if the IP address is equal to
-    ///         **::**.
+    /// - Note: Equivalent to checking if the IP address is equal to **::**
+    ///         or its IPv4-mapped form **::ffff:0.0.0.0**.
     public var isUnspecified: Bool {
-        return high == 0 && low == 0
+        if high == 0 && low == 0 { return true }
+        return ipv4Mapped?.isUnspecified ?? false
     }
 
     /// Returns `true` if the IP address is a loopback address.
     ///
-    /// - Note: Equivalent to checking if the IP address is **::1**.
+    /// - Note: Matches **::1** and the IPv4-mapped loopback block
+    ///         **::ffff:127.0.0.0/104**.
     public var isLoopback: Bool {
-        return high == 0 && low == 0x0100_0000_0000_0000
+        if high == 0 && low == 0x0100_0000_0000_0000 { return true }
+        return ipv4Mapped?.isLoopback ?? false
     }
-    
+
     /// Returns `true` if the IP address is a global unicast address **(2000::/3)**.
     public var isUnicastGlobal: Bool {
         return (high & 0xE0) == 0x20
     }
-    
+
     /// Returns `true` if the IP address is a unique local address **(fc00::/7)**.
+    ///
+    /// - Note: Also returns `true` for IPv4-mapped RFC 1918 addresses so that
+    ///         a dual-stack SSRF filter rejecting "private" addresses catches
+    ///         e.g. **::ffff:10.0.0.1**.
     public var isUnicastUniqueLocal: Bool {
-        return (high & 0xFE) == 0xFC
+        if (high & 0xFE) == 0xFC { return true }
+        return ipv4Mapped?.isPrivate ?? false
     }
-    
+
     /// Returns `true` if the IP address is a unicast link-local address **(fe80::/10)**.
+    ///
+    /// - Note: Also returns `true` for the IPv4-mapped form of
+    ///         **169.254.0.0/16** so that dual-stack filters catch e.g.
+    ///         **::ffff:169.254.169.254** (AWS instance metadata).
     public var isUnicastLinkLocal: Bool {
-        return (high & 0xC0FF) == 0x80FE
+        if (high & 0xC0FF) == 0x80FE { return true }
+        return ipv4Mapped?.isLinkLocal ?? false
     }
     
     /// Returns `true` if the IP address is a (deprecated) unicast site-local address **(fec0::/10)**.

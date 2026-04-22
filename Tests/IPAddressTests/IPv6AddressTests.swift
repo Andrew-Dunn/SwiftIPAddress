@@ -50,7 +50,30 @@ class IPv6AddressTests: XCTestCase {
         address = IPv6Address(parts: 0, 0, 0, 0, 0, 0, 0, 0x100)
         XCTAssertFalse(address.isLoopback)
     }
-    
+
+    /// Classification predicates must recognise IPv4-mapped IPv6 addresses
+    /// (`::ffff:X.X.X.X`). A dual-stack SSRF filter that checks both the
+    /// IPv4 and IPv6 predicates is bypassed by the mapped form: the IPv4
+    /// parser rejects it, the IPv6 parser accepts it, and every IPv6
+    /// classification returns false — yet a V4MAPPED socket still connects
+    /// to the embedded IPv4 address.
+    func testIPv4MappedClassification() {
+        // Mapped 127.0.0.0/8 must classify as loopback.
+        XCTAssertTrue(IPv6Address("::ffff:127.0.0.1")!.isLoopback)
+        XCTAssertTrue(IPv6Address("::ffff:127.255.255.254")!.isLoopback)
+        XCTAssertTrue(IPv6Address("::ffff:127.1.2.3")!.isLoopback)
+        // Mapped 0.0.0.0 must classify as unspecified.
+        XCTAssertTrue(IPv6Address("::ffff:0.0.0.0")!.isUnspecified)
+        // RFC 1918 addresses in mapped form must be flagged by some
+        // predicate so a dual-stack filter can reject them. The closest
+        // IPv6 analogue of "private" is unique-local.
+        XCTAssertTrue(IPv6Address("::ffff:10.0.0.1")!.isUnicastUniqueLocal)
+        XCTAssertTrue(IPv6Address("::ffff:172.16.0.1")!.isUnicastUniqueLocal)
+        XCTAssertTrue(IPv6Address("::ffff:192.168.0.1")!.isUnicastUniqueLocal)
+        // 169.254.169.254 — AWS instance metadata — must be flagged.
+        XCTAssertTrue(IPv6Address("::ffff:169.254.169.254")!.isUnicastLinkLocal)
+    }
+
     /// Test for private address detection.
     func testIsUnicastUniqueLocal() {
         XCTAssertFalse(IPv6Address(parts: 0, 0, 0, 0, 0, 0xffff, 0xdead, 0xbeef).isUnicastUniqueLocal)
@@ -402,7 +425,29 @@ class IPv6AddressTests: XCTestCase {
         parsed = IPv6Address("0:0:0:0:0:0:253.0.0")
         XCTAssertNil(parsed)
     }
-    
+
+    /// The parser currently exits its character loop via `else { break }` on
+    /// any unexpected character and does not validate that input was fully
+    /// consumed. Every string below has a valid IPv6 prefix followed by
+    /// arbitrary bytes and must be rejected to avoid parser-differential
+    /// attacks where this library and a downstream consumer disagree on the
+    /// meaning of the same input.
+    func testStringConstructorRejectsTrailingGarbage() {
+        XCTAssertNil(IPv6Address("2001:db8::1 and drop table"))
+        // An address parser must not accept a CIDR-shaped string.
+        XCTAssertNil(IPv6Address("2001:db8::1/64"))
+        // Mis-extracted URL authority.
+        XCTAssertNil(IPv6Address("::1]:8080"))
+        // Zone identifier: either reject, or expose it as a distinguishable
+        // property. Silently dropping means `::1` and `::1%evil` compare equal.
+        XCTAssertNil(IPv6Address("::1%eth0"))
+        XCTAssertNil(IPv6Address("::1%25eth0"))
+        // NUL terminator followed by more bytes.
+        XCTAssertNil(IPv6Address("::1\u{0}trailing"))
+        // Comma-separated address list.
+        XCTAssertNil(IPv6Address("::1,::ffff:169.254.169.254"))
+    }
+
     /// Test that the swift version creates the same IP address as the C version.
     func testEqualToPton() {
         func cDecodeIPAddress(ipString: String) -> in6_addr? {
@@ -456,6 +501,7 @@ class IPv6AddressTests: XCTestCase {
     static var allTests = [
         ("testIsUnspecified",        testIsUnspecified),
         ("testIsLoopback",           testIsLoopback),
+        ("testIPv4MappedClassification", testIPv4MappedClassification),
         ("testIsUnicastUniqueLocal", testIsUnicastUniqueLocal),
         ("testIsUnicastLinkLocal",   testIsUnicastLinkLocal),
         ("testIsUnicastGlobal",      testIsUnicastGlobal),
@@ -467,6 +513,7 @@ class IPv6AddressTests: XCTestCase {
         ("testStringConversion",     testStringConversion),
         ("testEqualityOperators",    testEqualityOperators),
         ("testStringConstructor",    testStringConstructor),
+        ("testStringConstructorRejectsTrailingGarbage", testStringConstructorRejectsTrailingGarbage),
         ("testEqualToPton",          testEqualToPton),
         ("testPhysicalProperties",   testPhysicalProperties)
     ]
