@@ -36,7 +36,7 @@ Add the package as a Swift Package Manager dependency:
 ```swift
 dependencies: [
     .package(url: "https://github.com/Andrew-Dunn/SwiftIPAddress.git",
-             from: "1.0.1"),
+             from: "1.1.0"),
 ]
 ```
 
