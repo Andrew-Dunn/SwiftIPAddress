@@ -228,21 +228,32 @@ public struct IPv4Address: LosslessStringConvertible, Hashable {
         return (value & 0x0000FFFF) == 0x0000FEA9
     }
     
-    /// Returns `true` if the IP address is globally-routable.
+    /// Returns `true` if the IP address is globally-routable per RFC 6890 —
+    /// i.e. not in any of the special-purpose ranges (private, loopback,
+    /// link-local, CGNAT, multicast, reserved, documentation, IETF protocol
+    /// assignments, benchmarking, or "this network").
     public var isGlobal: Bool {
         return !(
-            // Unspecified Address
-            value == 0x00000000 ||
-            // Private Addresses
+            // 0.0.0.0/8 "this network" (RFC 1122) — includes the unspecified address.
+            (value & 0x000000FF) == 0x00000000 ||
+            // Private Addresses (RFC 1918)
             (value & 0x000000FF) == 0x0000000A ||
             (value & 0x0000F0FF) == 0x000010AC ||
             (value & 0x0000FFFF) == 0x0000A8C0 ||
-            // Loopback Address
+            // Loopback 127.0.0.0/8
             (value & 0x000000FF) == 0x0000007F ||
-            // Link-Local Address
+            // Link-Local 169.254.0.0/16
             (value & 0x0000FFFF) == 0x0000FEA9 ||
-            // Broadcast Address
-            value == 0xFFFFFFFF ||
+            // Carrier-grade NAT 100.64.0.0/10 (RFC 6598)
+            (value & 0x0000C0FF) == 0x00004064 ||
+            // Benchmarking 198.18.0.0/15 (RFC 2544)
+            (value & 0x0000FEFF) == 0x000012C6 ||
+            // IETF Protocol Assignments 192.0.0.0/24
+            (value & 0x00FFFFFF) == 0x000000C0 ||
+            // Multicast 224.0.0.0/4 (RFC 5771)
+            (value & 0x000000F0) == 0x000000E0 ||
+            // Reserved 240.0.0.0/4 (RFC 1112) — subsumes 255.255.255.255 broadcast.
+            (value & 0x000000F0) == 0x000000F0 ||
             // Documentation Addresses
             (value & 0x00FFFFFF) == 0x000200C0 ||
             (value & 0x00FFFFFF) == 0x006433C6 ||
