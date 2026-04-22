@@ -79,10 +79,10 @@ fileprivate let latterQuads = [  ".0",  ".1",  ".2",  ".3",  ".4",  ".5",  ".6",
 ///
 /// - Author: Andrew Dunn.
 ///
-public struct IPv4Address: LosslessStringConvertible, Equatable {
+public struct IPv4Address: LosslessStringConvertible, Hashable {
     // Store the value in an array to enable simple typecasting to an array of
     // [UInt8] values.
-    fileprivate let value: UInt32;
+    fileprivate let value: UInt32
     
     /// Initialises a new instance with all zeroes.
     public init () {
@@ -102,34 +102,34 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     
     /// Initialises a new instance with an array of octets.
     ///
-    /// - Parameter array: An array of octets that make up the parts of an IP
-    ///                    address.
+    /// - Parameter octets: An array of octets that make up the parts of an IP
+    ///                     address.
     ///
     /// - Note: If the number of elements in the array is not equal to *4*,
     ///         the behaviour is undefined.
-    public init (fromOctets array: [UInt8]) {
-        assert(array.count == 4)
-        value = array.withUnsafeBytes({ (p) -> UInt32 in
+    public init(_ octets: [UInt8]) {
+        assert(octets.count == 4)
+        value = octets.withUnsafeBytes({ (p) -> UInt32 in
             return p.load(as: UInt32.self)
         })
     }
-    
-    /// Intialises a new instance with an integer representation of an IP
+
+    /// Initialises a new instance with an integer representation of an IP
     /// address in network-byte order.
     ///
     /// - Parameter uint: An integer representation of an IP address in
     ///                   network-byte order.
-    public init (fromUInt32 uint: UInt32) {
+    public init(_ uint: UInt32) {
         value = uint
     }
-    
-    /// Intialises a new instance from a string representaion of an IPv4
+
+    /// Initialises a new instance from a string representation of an IPv4
     /// address.
     ///
     /// - Parameter str: A string representation of an IPv4 address. If the
     ///                  string is anything other than an IPv4 address, `nil`
     ///                  will be returned instead.
-    public init? (_ str: String) {
+    public init?(_ str: String) {
         var shiftedDistance = UInt32(0)
         var currentValue = UInt32(0)
         var currentLength = 0
@@ -259,7 +259,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     public var isBroadcast: Bool {
         return value == 0xFFFFFFFF
     }
-    
+
     /// Returns true if the IP address is in a block reserved for the purposes
     /// of having example IP addresses in written documentation.
     public var isDocumentation: Bool {
@@ -267,7 +267,34 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
             (value & 0x00FFFFFF) == 0x006433C6 ||
             (value & 0x00FFFFFF) == 0x007100CB
     }
+
+    /// Returns true if the IP address is included in the given CIDR range.
+    ///
+    /// - Parameter cidr: The CIDR range to test membership in.
+    /// - Returns: True if the IP address is within the range, false otherwise.
+    public func isIncluded(in cidr: IPv4CIDR) -> Bool {
+        return (value & cidr.mask) == cidr.maskedNetwork
+    }
+
+    /// Returns true if the IP address is included in the given CIDR range.
+    ///
+    /// - Parameter range: A string representation of a CIDR range (e.g., "192.168.0.0/16").
+    /// - Returns: True if the IP address is within the range, false otherwise.
+    public func isIncluded(in range: String) -> Bool {
+        guard let cidr = IPv4CIDR(range) else { return false }
+        return isIncluded(in: cidr)
+    }
     
+    // MARK: - Deprecated API
+
+    @available(*, deprecated, renamed: "init(_:)")
+    public init(fromOctets octets: [UInt8]) { self.init(octets) }
+
+    @available(*, deprecated, renamed: "init(_:)")
+    public init(fromUInt32 uint: UInt32) { self.init(uint) }
+
+    // MARK: -
+
     /// Returns a string representation of the IP address.
     public var description: String {
         let o0 = Int(value & 0xFF)
@@ -293,7 +320,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     public static var loopback: IPv4Address {
         struct Static {
             static let loopbackAddress =
-                IPv4Address.init(fromUInt32: 0x0100007F)
+                IPv4Address(0x0100007F)
         }
         return Static.loopbackAddress
     }
@@ -303,7 +330,7 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     public static var broadcast: IPv4Address {
         struct Static {
             static let broadcastAddress =
-                IPv4Address.init(fromUInt32: 0xFFFFFFFF)
+                IPv4Address(0xFFFFFFFF)
         }
         return Static.broadcastAddress
     }
@@ -314,10 +341,48 @@ public struct IPv4Address: LosslessStringConvertible, Equatable {
     }
 }
 
+/// Represents an IPv4 CIDR range.
+///
+/// Pre-computes the mask and masked network address at construction time so
+/// membership tests (`IPv4Address.isIncluded(in:)`) are a single bitmask-and-compare
+/// with no parsing or allocation.
+public struct IPv4CIDR: Hashable {
+    // Stored in the same little-endian layout as IPv4Address.value.
+    fileprivate let maskedNetwork: UInt32
+    fileprivate let mask: UInt32
+
+    /// Initialises a new instance from a network address and prefix length.
+    ///
+    /// - Parameters:
+    ///   - network: The network address (host bits are ignored).
+    ///   - prefix: The prefix length (0–32). Returns `nil` if out of range.
+    public init?(network: IPv4Address, prefix: UInt32) {
+        guard prefix <= 32 else { return nil }
+        // Build the mask in network byte order then byte-swap to match the
+        // little-endian internal representation.
+        let mask: UInt32 = prefix == 0 ? 0 : (UInt32.max << (32 - prefix)).byteSwapped
+        self.mask = mask
+        self.maskedNetwork = network.value & mask
+    }
+
+    /// Initialises a new instance from a CIDR string (e.g. "192.168.0.0/16").
+    /// Returns `nil` if the string is not a valid CIDR range.
+    public init?(_ description: String) {
+        let components = description.split(separator: "/")
+        guard components.count == 2,
+              let network = IPv4Address(String(components[0])),
+              let prefix = UInt32(components[1]) else { return nil }
+        self.init(network: network, prefix: prefix)
+    }
+}
+
 /// Extracts an integer representation of the given IPv4 address in network-byte
 /// order.
 public extension UInt32 {
-    init (fromIPv4Address ip: IPv4Address) {
+    init(_ ip: IPv4Address) {
         self = ip.value
     }
+
+    @available(*, deprecated, renamed: "init(_:)")
+    init(fromIPv4Address ip: IPv4Address) { self.init(ip) }
 }

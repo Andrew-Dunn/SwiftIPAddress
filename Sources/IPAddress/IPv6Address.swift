@@ -48,16 +48,21 @@ fileprivate let F: UInt8 = 0x46
 ///
 /// - Author: Andrew Dunn.
 ///
-public struct IPv6Address: LosslessStringConvertible, Equatable {
+public struct IPv6Address: LosslessStringConvertible, Hashable {
     fileprivate let high, low: UInt64
-    
-    public static func ==(lhs: IPv6Address, rhs: IPv6Address) -> Bool {
-        return  lhs.high == rhs.high && lhs.low == rhs.low
+
+    public static func == (lhs: IPv6Address, rhs: IPv6Address) -> Bool {
+        return lhs.high == rhs.high && lhs.low == rhs.low
     }
-    
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(high)
+        hasher.combine(low)
+    }
+
     public init() {
-        low = 0;
-        high = 0;
+        low = 0
+        high = 0
     }
     
     /// Initialises a new instance with the given values.
@@ -79,7 +84,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
               | (UInt64(g.bigEndian) << 32) | (UInt64(h.bigEndian) << 48)
     }
     
-    /// Intialises a new instance from a string representaion of an IPv6
+    /// Initialises a new instance from a string representation of an IPv6
     /// address.
     ///
     /// - Parameter str: A string representation of an IPv6 address. If the
@@ -138,10 +143,10 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 // The first part of the quad needs to be re-calculated, as it was originally parsed as hex.
                 if !parsingQuad {
                     var newV: UInt16 = 0
-                    if currentValue > 0x100 {
+                    if currentValue >= 0x100 {
                         newV += ((currentValue & 0xF00) >> 8) * 100
                     }
-                    if currentValue > 0x10 {
+                    if currentValue >= 0x10 {
                         newV += ((currentValue & 0xF0) >> 4) * 10
                     }
                     newV += currentValue & 0xF
@@ -193,7 +198,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
                 currentValue = 0
                 currentLength = 0
             } else {
-                break
+                return nil
             }
         }
         if (parsingQuad) {
@@ -262,35 +267,58 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
         low = lo
     }
     
+    /// If this address is the IPv4-mapped form **(::ffff:X.X.X.X)**, returns the
+    /// embedded IPv4 address; otherwise `nil`. Used by the classification
+    /// predicates so that a dual-stack socket's eventual destination is
+    /// considered when deciding whether an address is loopback, private, etc.
+    private var ipv4Mapped: IPv4Address? {
+        guard high == 0 && (low & 0x0000_0000_FFFF_FFFF) == 0x0000_0000_FFFF_0000
+            else { return nil }
+        return IPv4Address(UInt32(low >> 32))
+    }
+
     /// Returns `true` if the IP address is an unspecified, if you listen on
     /// this address, your socket will listen on all addresses available.
     ///
-    /// - Note: Equivalent to checking if the IP address is equal to
-    ///         **::**.
+    /// - Note: Equivalent to checking if the IP address is equal to **::**
+    ///         or its IPv4-mapped form **::ffff:0.0.0.0**.
     public var isUnspecified: Bool {
-        return high == 0 && low == 0
+        if high == 0 && low == 0 { return true }
+        return ipv4Mapped?.isUnspecified ?? false
     }
 
     /// Returns `true` if the IP address is a loopback address.
     ///
-    /// - Note: Equivalent to checking if the IP address is **::1**.
+    /// - Note: Matches **::1** and the IPv4-mapped loopback block
+    ///         **::ffff:127.0.0.0/104**.
     public var isLoopback: Bool {
-        return high == 0 && low == 0x0100_0000_0000_0000
+        if high == 0 && low == 0x0100_0000_0000_0000 { return true }
+        return ipv4Mapped?.isLoopback ?? false
     }
-    
+
     /// Returns `true` if the IP address is a global unicast address **(2000::/3)**.
     public var isUnicastGlobal: Bool {
         return (high & 0xE0) == 0x20
     }
-    
+
     /// Returns `true` if the IP address is a unique local address **(fc00::/7)**.
+    ///
+    /// - Note: Also returns `true` for IPv4-mapped RFC 1918 addresses so that
+    ///         a dual-stack SSRF filter rejecting "private" addresses catches
+    ///         e.g. **::ffff:10.0.0.1**.
     public var isUnicastUniqueLocal: Bool {
-        return (high & 0xFE) == 0xFC
+        if (high & 0xFE) == 0xFC { return true }
+        return ipv4Mapped?.isPrivate ?? false
     }
-    
+
     /// Returns `true` if the IP address is a unicast link-local address **(fe80::/10)**.
+    ///
+    /// - Note: Also returns `true` for the IPv4-mapped form of
+    ///         **169.254.0.0/16** so that dual-stack filters catch e.g.
+    ///         **::ffff:169.254.169.254** (AWS instance metadata).
     public var isUnicastLinkLocal: Bool {
-        return (high & 0xC0FF) == 0x80FE
+        if (high & 0xC0FF) == 0x80FE { return true }
+        return ipv4Mapped?.isLinkLocal ?? false
     }
     
     /// Returns `true` if the IP address is a (deprecated) unicast site-local address **(fec0::/10)**.
@@ -307,7 +335,25 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
     public var isDocumentation: Bool {
         return (high & 0xFFFF_FFFF) == 0xb80d_0120
     }
-    
+
+    /// Returns true if the IP address is included in the given CIDR range.
+    ///
+    /// - Parameter cidr: The CIDR range to test membership in.
+    /// - Returns: True if the IP address is within the range, false otherwise.
+    public func isIncluded(in cidr: IPv6CIDR) -> Bool {
+        return (high & cidr.highMask) == cidr.maskedNetworkHigh &&
+               (low  & cidr.lowMask)  == cidr.maskedNetworkLow
+    }
+
+    /// Returns true if the IP address is included in the given CIDR range.
+    ///
+    /// - Parameter range: A string representation of a CIDR range (e.g., "2001:db8::/32").
+    /// - Returns: True if the IP address is within the range, false otherwise.
+    public func isIncluded(in range: String) -> Bool {
+        guard let cidr = IPv6CIDR(range) else { return false }
+        return isIncluded(in: cidr)
+    }
+
     /// Returns a string representation of the IP address. Will display IPv4 compatible/mapped addresses
     /// correctly, and will truncate zeroes when possible.
     public var description: String {
@@ -333,7 +379,7 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             let ipv4Check = low & 0x0000_0000_FFFF_FFFF
             if (ipv4Check == 0 || ipv4Check == 0xFFFF_0000) {
                 // Use dotted quads to represent the IPv4 part.
-                let ipv4 = IPv4Address(fromUInt32: UInt32(low >> 32))
+                let ipv4 = IPv4Address(UInt32(low >> 32))
                 if (ipv4Check == 0) {
                     return "::\(ipv4.description)"
                 }
@@ -473,5 +519,53 @@ public struct IPv6Address: LosslessStringConvertible, Equatable {
             static let loopbackAddress = IPv6Address.init(parts: 0, 0, 0, 0, 0, 0, 0, 1)
         }
         return Static.loopbackAddress
+    }
+}
+
+/// Represents an IPv6 CIDR range.
+///
+/// Pre-computes the masks and masked network halves at construction time so
+/// membership tests (`IPv6Address.isIncluded(in:)`) are two bitmask-and-compare
+/// operations with no parsing or allocation.
+public struct IPv6CIDR: Hashable {
+    // Stored in the same little-endian layout as IPv6Address.high / .low.
+    fileprivate let maskedNetworkHigh: UInt64
+    fileprivate let maskedNetworkLow: UInt64
+    fileprivate let highMask: UInt64
+    fileprivate let lowMask: UInt64
+
+    /// Initialises a new instance from a network address and prefix length.
+    ///
+    /// - Parameters:
+    ///   - network: The network address (host bits are ignored).
+    ///   - prefix: The prefix length (0–128). Returns `nil` if out of range.
+    public init?(network: IPv6Address, prefix: UInt32) {
+        guard prefix <= 128 else { return nil }
+        let highBits = min(prefix, 64)
+        let lowBits = prefix > 64 ? prefix - 64 : 0
+
+        // Build masks in network byte order then byte-swap to match the
+        // little-endian internal representation of `high` and `low`.
+        let highMask: UInt64 = highBits == 0 ? 0
+                             : highBits == 64 ? UInt64.max
+                             : (UInt64.max << (64 - highBits)).byteSwapped
+        let lowMask: UInt64  = lowBits == 0 ? 0
+                             : lowBits == 64 ? UInt64.max
+                             : (UInt64.max << (64 - lowBits)).byteSwapped
+
+        self.highMask = highMask
+        self.lowMask = lowMask
+        self.maskedNetworkHigh = network.high & highMask
+        self.maskedNetworkLow = network.low & lowMask
+    }
+
+    /// Initialises a new instance from a CIDR string (e.g. "2001:db8::/32").
+    /// Returns `nil` if the string is not a valid CIDR range.
+    public init?(_ description: String) {
+        let components = description.split(separator: "/")
+        guard components.count == 2,
+              let network = IPv6Address(String(components[0])),
+              let prefix = UInt32(components[1]) else { return nil }
+        self.init(network: network, prefix: prefix)
     }
 }
